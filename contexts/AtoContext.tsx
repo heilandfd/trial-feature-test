@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { atoApi, AtoManager, AtoUser, UserReport } from '../lib/ato-api'
+import { DevConfig } from '../lib/dev-config'
 
 interface AtoContextType {
   // Manager data
@@ -58,6 +59,15 @@ export const AtoProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       setLoading(true)
       setError(null)
+
+      // Use mock data for test manager ID to avoid API calls
+      if (DevConfig.isTestManager(supabaseUserId)) {
+        setCurrentManager(DevConfig.createMockManager(supabaseUserId))
+        setSelectedUser(null)
+        setManagedUsers([])
+        setLoading(false)
+        return
+      }
 
       // Set the API token
       await atoApi.setAuthToken(accessToken)

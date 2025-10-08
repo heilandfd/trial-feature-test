@@ -15,7 +15,7 @@ export default function DashboardScreen() {
   const { user, session, loading: authLoading } = useAuth()
   const { currentManager, initializeManagerAndUsers, loading, error } = useAto()
   const { t } = useI18n()
-  const [initializing, setInitializing] = useState(true)
+  const [initializing, setInitializing] = useState(false)
 
   useEffect(() => {
     if (!authLoading && !user) {

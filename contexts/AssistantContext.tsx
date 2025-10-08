@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
 import type { Message, AssistantState } from '../types/assistant'
+import { useI18n } from '../components/I18nProvider'
 
 interface AssistantContextType {
   // State
@@ -28,6 +29,7 @@ interface AssistantProviderProps {
 }
 
 export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }) => {
+  const { t } = useI18n()
   const [messages, setMessages] = useState<Message[]>([])
   const [state, setState] = useState<AssistantState>({
     isOpen: false,
@@ -37,8 +39,6 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
   })
 
   const openAssistant = () => {
-    // TODO: Open sheet dialog - implementation pending
-    alert('TODO: Open sheet dialog')
     setState(prev => ({ ...prev, isOpen: true }))
   }
 
@@ -49,7 +49,6 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
   const sendMessage = async (content: string) => {
     if (!content.trim()) return
 
-    // Add user message
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -58,22 +57,35 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
     }
 
     setMessages(prev => [...prev, userMessage])
-
-    // For now, echo response (will be replaced with intent routing + tools)
     setState(prev => ({ ...prev, isProcessing: true }))
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      // TODO: Replace with actual LLM/API call
+      // Temporary echo response for development
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-    const assistantMessage: Message = {
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      content: `Echo: "${content}"`,
-      timestamp: new Date(),
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: `Echo: "${content}"`, // TODO: Replace with actual AI response
+        timestamp: new Date(),
+      }
+
+      setMessages(prev => [...prev, assistantMessage])
+    } catch (error) {
+      console.error('[AssistantContext] Error sending message:', error)
+
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: t('assistant.errors.processingError'),
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setState(prev => ({ ...prev, isProcessing: false }))
     }
-
-    setMessages(prev => [...prev, assistantMessage])
-    setState(prev => ({ ...prev, isProcessing: false }))
   }
 
   const clearMessages = () => {

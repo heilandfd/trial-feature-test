@@ -149,6 +149,11 @@ export interface Translations {
       networkError: string
       processingError: string
     }
+    accessibility: {
+      inputHint: string
+      sendButton: string
+      closeButton: string
+    }
   }
 }
 

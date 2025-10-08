@@ -152,5 +152,10 @@ export const en: Translations = {
       networkError: 'Connection error',
       processingError: 'Error processing your message',
     },
+    accessibility: {
+      inputHint: 'Enter your message to send to the assistant',
+      sendButton: 'Send message',
+      closeButton: 'Close the assistant',
+    },
   },
 }

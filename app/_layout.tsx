@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import 'react-native-reanimated'
 
 import { useColorScheme } from '@/hooks/useColorScheme'
@@ -9,6 +10,7 @@ import { AuthProvider } from '@/components/AuthProvider'
 import { AuthGuard } from '@/components/AuthGuard'
 import { AtoProvider } from '@/contexts/AtoContext'
 import { I18nProvider } from '@/components/I18nProvider'
+import { AssistantProvider } from '@/contexts/AssistantContext'
 
 export default function RootLayout() {
   const colorScheme = useColorScheme()
@@ -22,26 +24,30 @@ export default function RootLayout() {
   }
 
   return (
-    <I18nProvider>
-      <AuthProvider>
-        <AtoProvider>
-          <AuthGuard>
-            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="login" options={{ headerShown: false }} />
-                <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-                <Stack.Screen name="contacts" options={{ headerShown: false }} />
-                <Stack.Screen name="profile" options={{ headerShown: false }} />
-                <Stack.Screen name="settings" options={{ headerShown: false }} />
-                <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-              <StatusBar style="auto" />
-            </ThemeProvider>
-          </AuthGuard>
-        </AtoProvider>
-      </AuthProvider>
-    </I18nProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <I18nProvider>
+        <AuthProvider>
+          <AtoProvider>
+            <AssistantProvider>
+              <AuthGuard>
+                <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                  <Stack>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="login" options={{ headerShown: false }} />
+                    <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+                    <Stack.Screen name="contacts" options={{ headerShown: false }} />
+                    <Stack.Screen name="profile" options={{ headerShown: false }} />
+                    <Stack.Screen name="settings" options={{ headerShown: false }} />
+                    <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+                    <Stack.Screen name="+not-found" />
+                  </Stack>
+                  <StatusBar style="auto" />
+                </ThemeProvider>
+              </AuthGuard>
+            </AssistantProvider>
+          </AtoProvider>
+        </AuthProvider>
+      </I18nProvider>
+    </GestureHandlerRootView>
   )
 }

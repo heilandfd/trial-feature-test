@@ -135,6 +135,21 @@ export interface Translations {
     smsError: string
     emailError: string
   }
+  assistant: {
+    defaultUserName: string
+    header: string
+    placeholder: string
+    emptyStateTitle: string
+    emptyStateSubtitle: string
+    listening: string
+    speaking: string
+    processing: string
+    errors: {
+      noPermission: string
+      networkError: string
+      processingError: string
+    }
+  }
 }
 
 export type TranslationKey = keyof Translations

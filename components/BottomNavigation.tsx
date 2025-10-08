@@ -2,6 +2,9 @@ import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useRouter, usePathname } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useAssistant } from '../contexts/AssistantContext'
+import { AssistantTrigger } from './assistant/AssistantTrigger'
 
 type IconName = keyof typeof Ionicons.glyphMap
 
@@ -16,9 +19,12 @@ interface TabItemProps extends Tab {
   onPress: () => void
 }
 
-const TABS: Tab[] = [
+const LEFT_TABS: Tab[] = [
   { label: 'Inicio', iconName: 'home', route: '/dashboard' },
   { label: 'Contactos', iconName: 'book', route: '/contacts' },
+]
+
+const RIGHT_TABS: Tab[] = [
   { label: 'Perfil', iconName: 'person', route: '/profile' },
   { label: 'Ajustes', iconName: 'settings', route: '/settings' },
 ]
@@ -27,9 +33,13 @@ const COLORS = {
   active: '#3B82F6',
   inactive: '#9CA3AF',
   background: '#FFFFFF',
-  shadow: '#3B82F6',
+  shadow: '#3CCEF5',
   activeBackground: '#EBF4FF',
 } as const
+
+// Assistant trigger button configuration
+const ASSISTANT_BUTTON_SIZE = 72
+const ASSISTANT_BUTTON_GAP = 16 // Space reserved for the button (8px on each side)
 
 const TabItem: React.FC<TabItemProps> = ({ label, iconName, onPress, isActive }) => (
   <TouchableOpacity style={styles.tabItem} onPress={onPress} activeOpacity={0.7}>
@@ -43,24 +53,54 @@ const TabItem: React.FC<TabItemProps> = ({ label, iconName, onPress, isActive })
 export const BottomNavigation: React.FC = () => {
   const router = useRouter()
   const pathname = usePathname()
+  const insets = useSafeAreaInsets()
+  const { openAssistant, state } = useAssistant()
 
   const handleTabPress = (route: string) => {
-    router.push(route as any)
+    if (pathname !== route) router.push(route as any)
   }
 
+  const bottomPad = Math.max(insets.bottom, 10)
+
   return (
-    <View style={styles.container}>
-      <View style={styles.navBar}>
+    <View style={styles.container} pointerEvents="box-none">
+      <View style={[styles.navBar, { paddingBottom: bottomPad }]}>
         <View style={styles.tabContainer}>
-          {TABS.map(tab => (
-            <TabItem
-              key={tab.route}
-              {...tab}
-              isActive={pathname === tab.route}
-              onPress={() => handleTabPress(tab.route)}
-            />
-          ))}
+          <View style={styles.sideTabsContainer}>
+            {LEFT_TABS.map(tab => (
+              <TabItem
+                key={tab.route}
+                {...tab}
+                isActive={pathname === tab.route}
+                onPress={() => handleTabPress(tab.route)}
+              />
+            ))}
+          </View>
+
+          <View style={{ width: ASSISTANT_BUTTON_SIZE + ASSISTANT_BUTTON_GAP }} />
+
+          <View style={styles.sideTabsContainer}>
+            {RIGHT_TABS.map(tab => (
+              <TabItem
+                key={tab.route}
+                {...tab}
+                isActive={pathname === tab.route}
+                onPress={() => handleTabPress(tab.route)}
+              />
+            ))}
+          </View>
         </View>
+      </View>
+
+      <View
+        style={[styles.centerTriggerOverlay, { bottom: bottomPad + 18 }]}
+        pointerEvents="box-none"
+      >
+        <AssistantTrigger
+          onPress={openAssistant}
+          isActive={state.isOpen}
+          size={ASSISTANT_BUTTON_SIZE}
+        />
       </View>
     </View>
   )
@@ -78,19 +118,32 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingBottom: 28,
     paddingTop: 12,
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
+    overflow: 'visible',
   },
   tabContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
+  },
+  sideTabsContainer: {
+    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'space-around',
+  },
+  centerTriggerOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 20,
+    elevation: 12,
   },
   tabItem: {
     alignItems: 'center',

@@ -138,4 +138,19 @@ export const en: Translations = {
     smsError: 'Could not open SMS',
     emailError: 'Could not open email client',
   },
+  assistant: {
+    defaultUserName: 'your family member',
+    header: "I'm Ato, shall we talk about {userName}?",
+    placeholder: 'You can also write to me...',
+    emptyStateTitle: 'Hello, I am your assistant.',
+    emptyStateSubtitle: 'How can I help you?',
+    listening: 'Listening...',
+    speaking: 'Speaking...',
+    processing: 'Thinking...',
+    errors: {
+      noPermission: 'No microphone permission',
+      networkError: 'Connection error',
+      processingError: 'Error processing your message',
+    },
+  },
 }

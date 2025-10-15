@@ -3,7 +3,7 @@ import type { Message, AssistantState } from '../types/assistant'
 import { useI18n } from '../components/I18nProvider'
 import { useAuth } from '../components/AuthProvider'
 import { useAto } from './AtoContext'
-import { realtimeAgent, processMessageWithLLM } from '../lib/realtime-agent'
+import { realtimeAgent } from '../lib/realtime-agent'
 import { requestMicrophonePermission } from '../lib/audio-utils'
 
 interface AssistantContextType {
@@ -72,7 +72,8 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
   const getContext = () => {
     const managerName = currentManager?.nickname || user?.email?.split('@')[0] || 'Manager'
     const userName = selectedUser?.nickname || 'your family member'
-    const userId = selectedUser?.id
+    // assume the user id is the manager id if user id is missing
+    const userId = selectedUser?.id || currentManager?.id || user?.id
     const authToken = session?.access_token
 
     return {

@@ -234,6 +234,7 @@ export async function processMessageWithLLM(
       // Execute the tool
       const toolResult = await executeTool(functionName, functionArgs, {
         authToken: context.authToken,
+        userId: context.userId,
         locale: context.language === 'es' ? 'es-ES' : 'en-US',
       })
 
@@ -445,17 +446,20 @@ export class RealtimeAgent {
    * Cancel current recording without processing
    */
   async cancelRecording(): Promise<void> {
-    if (this.recording && this.isRecording) {
-      try {
-        const uri = await stopRecording(this.recording)
-        await deleteAudioFile(uri)
-        this.isRecording = false
-        this.recording = null
-      } catch (error) {
-        console.error('[RealtimeAgent] Error cancelling recording:', error)
-        this.isRecording = false
-        this.recording = null
-      }
+    if (!this.recording) {
+      // No recording to cancel
+      this.isRecording = false
+      return
+    }
+
+    try {
+      const uri = await stopRecording(this.recording)
+      await deleteAudioFile(uri)
+    } catch {
+      // Silently ignore errors - recording may already be stopped or cleaned up
+    } finally {
+      this.isRecording = false
+      this.recording = null
     }
   }
 

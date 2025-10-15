@@ -1,7 +1,6 @@
 import React from 'react'
 import { Image } from 'expo-image'
-import { Platform, StyleSheet, TouchableOpacity } from 'react-native'
-import { useRouter } from 'expo-router'
+import { StyleSheet, TouchableOpacity } from 'react-native'
 
 import { HelloWave } from '@/components/HelloWave'
 import ParallaxScrollView from '@/components/ParallaxScrollView'

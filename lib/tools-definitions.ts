@@ -31,16 +31,11 @@ export const getUserReportTool = {
   type: 'function' as const,
   name: 'getUserReport',
   description:
-    'Get a detailed activity report for the elderly user. Includes information about their reminders, contacts, and recent activity. Use this when the manager asks about how the user is doing, their schedule, reminders, or general wellbeing.',
+    'Get a detailed activity report for the elderly user that the manager is caring for. Includes information about their reminders, contacts, and recent activity. Use this when the manager asks about how the user is doing, their schedule, reminders, or general wellbeing. The user ID is automatically provided from context.',
   parameters: {
     type: 'object',
-    properties: {
-      userId: {
-        type: 'string',
-        description: 'The ID of the elderly user to get the report for',
-      },
-    },
-    required: ['userId'],
+    properties: {},
+    required: [],
   },
 }
 
@@ -79,8 +74,6 @@ export async function executeGetUserReport(userId: string, authToken: string): P
   try {
     // Use mock data in development mode
     if (DevConfig.enabled) {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
       const mockReport = DevConfig.createMockUserReport()
 
       return {
@@ -167,17 +160,20 @@ export function executeGetCurrentTime(locale: string = 'en-US'): ToolResult {
 export async function executeTool(
   toolName: string,
   args: any,
-  context: { authToken?: string; locale?: string }
+  context: { authToken?: string; locale?: string; userId?: string }
 ): Promise<ToolResult> {
   switch (toolName) {
     case 'getUserReport':
-      if (!args.userId) {
-        return { success: false, error: 'userId is required' }
+      // Use userId from context if not provided in args
+      const userId = args.userId || context.userId
+
+      if (!userId) {
+        return { success: false, error: 'userId not available' }
       }
       if (!context.authToken) {
         return { success: false, error: 'authToken is required' }
       }
-      return executeGetUserReport(args.userId, context.authToken)
+      return executeGetUserReport(userId, context.authToken)
 
     case 'getCurrentTime':
       return executeGetCurrentTime(context.locale)

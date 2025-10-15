@@ -127,6 +127,12 @@ export async function startRecording(): Promise<Audio.Recording> {
  */
 export async function stopRecording(recording: Audio.Recording): Promise<string> {
   try {
+    // Check if recording is in a valid state
+    const status = await recording.getStatusAsync()
+    if (!status.canRecord && !status.isRecording && !status.isDoneRecording) {
+      throw new Error('Recording is not in a valid state to stop')
+    }
+
     await recording.stopAndUnloadAsync()
     const uri = recording.getURI()
 
@@ -141,7 +147,11 @@ export async function stopRecording(recording: Audio.Recording): Promise<string>
 
     return uri
   } catch (error) {
-    console.error('[Audio] Error stopping recording:', error)
+    const errorMessage = error instanceof Error ? error.message : ''
+    // Silently ignore "does not exist" errors - recording may be cleaned up
+    if (!errorMessage.includes('does not exist')) {
+      console.error('[Audio] Error stopping recording:', error)
+    }
     throw new Error(
       'Failed to stop recording: ' + (error instanceof Error ? error.message : 'Unknown error')
     )
@@ -221,7 +231,11 @@ export async function stopAudio(sound: Audio.Sound): Promise<void> {
     await sound.stopAsync()
     await sound.unloadAsync()
   } catch (error) {
-    console.error('[Audio] Error stopping audio:', error)
+    // Silently ignore interruption errors when user stops audio
+    const errorMessage = error instanceof Error ? error.message : ''
+    if (!errorMessage.includes('interrupted')) {
+      console.error('[Audio] Error stopping audio:', error)
+    }
   }
 }
 

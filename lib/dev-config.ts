@@ -18,7 +18,7 @@
  */
 
 import type { User, Session } from '@supabase/supabase-js'
-import type { AtoManager } from './ato-api'
+import type { AtoManager, UserReport } from './ato-api'
 
 // Environment-based feature flag
 const isDevelopmentMode = __DEV__ || process.env.EXPO_PUBLIC_ENABLE_DEV_MODE === 'true'
@@ -108,6 +108,56 @@ function createMockManager(managerId: string): AtoManager {
 }
 
 /**
+ * Creates a mock UserReport for testing purposes
+ */
+function createMockUserReport(): UserReport {
+  return {
+    user_id: STORE_TESTING_CREDENTIALS.managerId,
+    report_generated_at: new Date().toISOString(),
+    summary: {
+      total_contacts: 5,
+      total_reminders: 12,
+      active_reminders: 3,
+      completed_reminders: 9,
+    },
+    recent_activity: [
+      {
+        type: 'reminder_completed',
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        description: 'Took morning medicine',
+      },
+      {
+        type: 'contact_called',
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+        description: 'Called Maria',
+      },
+      {
+        type: 'reminder_created',
+        timestamp: new Date(Date.now() - 86400000).toISOString(),
+        description: 'New reminder: Call doctor',
+      },
+    ],
+    upcoming_reminders: [
+      {
+        id: 'reminder-1',
+        task: 'Take evening medicine',
+        scheduled_for: new Date(Date.now() + 10800000).toISOString(),
+      },
+      {
+        id: 'reminder-2',
+        task: 'Call doctor for checkup',
+        scheduled_for: new Date(Date.now() + 86400000).toISOString(),
+      },
+      {
+        id: 'reminder-3',
+        task: 'Prepare lunch',
+        scheduled_for: new Date(Date.now() + 7200000).toISOString(),
+      },
+    ],
+  }
+}
+
+/**
  * Development and testing configuration
  * Provides centralized access to mock data and testing utilities
  */
@@ -170,4 +220,9 @@ export const DevConfig = {
    * Create a mock AtoManager
    */
   createMockManager,
+
+  /**
+   * Create a mock UserReport
+   */
+  createMockUserReport,
 } as const

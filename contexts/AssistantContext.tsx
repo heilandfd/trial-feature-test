@@ -47,6 +47,7 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
     isListening: false,
     isSpeaking: false,
     isProcessing: false,
+    isConversationalMode: false,
   })
 
   // Cleanup on unmount
@@ -61,7 +62,7 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
   }
 
   const closeAssistant = () => {
-    setState(prev => ({ ...prev, isOpen: false }))
+    setState(prev => ({ ...prev, isOpen: false, isConversationalMode: false }))
     realtimeAgent.stopSpeaking()
   }
 
@@ -97,7 +98,8 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
     }
 
     setMessages(prev => [...prev, userMessage])
-    setState(prev => ({ ...prev, isProcessing: true }))
+    // Exit conversational mode when user types
+    setState(prev => ({ ...prev, isProcessing: true, isConversationalMode: false }))
 
     try {
       // Process message with LLM
@@ -165,12 +167,12 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
         setState(prev => ({ ...prev, isSpeaking: false }))
       }
 
-      // Start recording
-      setState(prev => ({ ...prev, isListening: true }))
+      // Start recording and enter conversational mode
+      setState(prev => ({ ...prev, isListening: true, isConversationalMode: true }))
       await realtimeAgent.startListening()
     } catch (error) {
       console.error('[AssistantContext] Error starting listening:', error)
-      setState(prev => ({ ...prev, isListening: false }))
+      setState(prev => ({ ...prev, isListening: false, isConversationalMode: false }))
 
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
@@ -188,6 +190,8 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
   const stopListening = async () => {
     if (!state.isListening) return
 
+    const isInConversationalMode = state.isConversationalMode
+
     setState(prev => ({ ...prev, isListening: false, isProcessing: true }))
 
     try {
@@ -196,32 +200,46 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
       // Stop recording and process
       const result = await realtimeAgent.stopListeningAndProcess(messages, context)
 
-      // Add transcribed user message
-      const userMessage: Message = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: result.transcribedText,
-        timestamp: new Date(),
-      }
-      setMessages(prev => [...prev, userMessage])
+      // In conversational mode: DON'T add messages to chat
+      // In chat mode: ADD messages to chat
+      if (!isInConversationalMode) {
+        const userMessage: Message = {
+          id: `user-${Date.now()}`,
+          role: 'user',
+          content: result.transcribedText,
+          timestamp: new Date(),
+        }
+        setMessages(prev => [...prev, userMessage])
 
-      // Add assistant response
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: result.responseText,
-        timestamp: new Date(),
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: result.responseText,
+          timestamp: new Date(),
+        }
+        setMessages(prev => [...prev, assistantMessage])
       }
-      setMessages(prev => [...prev, assistantMessage])
 
-      // Play response audio
+      // Play response audio (waits until audio finishes)
       setState(prev => ({ ...prev, isProcessing: false, isSpeaking: true }))
+
+      // WAIT for audio to finish playing before continuing
       await realtimeAgent.playResponse(result.responseAudioUri)
+
+      // Audio finished playing, update state
       setState(prev => ({ ...prev, isSpeaking: false }))
+
+      // Auto-listen again if in conversational mode
+      if (isInConversationalMode) {
+        // Small delay before starting to listen again
+        setTimeout(() => {
+          startListening()
+        }, 300)
+      }
     } catch (error) {
       console.error('[AssistantContext] Error processing voice:', error)
 
-      setState(prev => ({ ...prev, isProcessing: false }))
+      setState(prev => ({ ...prev, isProcessing: false, isConversationalMode: false }))
 
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
@@ -243,7 +261,7 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
    */
   const cancelListening = () => {
     realtimeAgent.cancelRecording()
-    setState(prev => ({ ...prev, isListening: false }))
+    setState(prev => ({ ...prev, isListening: false, isConversationalMode: false }))
   }
 
   /**

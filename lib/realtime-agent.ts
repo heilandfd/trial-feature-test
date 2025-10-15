@@ -462,6 +462,8 @@ export class RealtimeAgent {
   /**
    * Play AI response audio
    *
+   * Waits until audio finishes playing before resolving
+   *
    * @param audioUri - URI of audio file to play
    */
   async playResponse(audioUri: string): Promise<void> {
@@ -469,21 +471,24 @@ export class RealtimeAgent {
       await this.stopSpeaking()
     }
 
-    try {
-      this.currentSound = await playAudio(audioUri)
-      this.isSpeaking = true
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        this.currentSound = await playAudio(audioUri)
+        this.isSpeaking = true
 
-      this.currentSound.setOnPlaybackStatusUpdate(status => {
-        if (status.isLoaded && status.didJustFinish) {
-          this.isSpeaking = false
-          deleteAudioFile(audioUri).catch(console.error)
-        }
-      })
-    } catch (error) {
-      console.error('[RealtimeAgent] Error playing response:', error)
-      this.isSpeaking = false
-      throw error
-    }
+        this.currentSound.setOnPlaybackStatusUpdate(status => {
+          if (status.isLoaded && status.didJustFinish) {
+            this.isSpeaking = false
+            deleteAudioFile(audioUri).catch(console.error)
+            resolve() // Resolve promise when audio finishes
+          }
+        })
+      } catch (error) {
+        console.error('[RealtimeAgent] Error playing response:', error)
+        this.isSpeaking = false
+        reject(error)
+      }
+    })
   }
 
   /**

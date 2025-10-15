@@ -152,6 +152,8 @@ export const en: Translations = {
     tapToStopRecording: 'Tap to stop recording',
     tapToStopSpeaking: 'Tap to stop speaking',
     tapToSpeak: 'Tap the button to speak, or use the text input below',
+    tapToEndConversation: 'Tap to end voice conversation',
+    waitingForYou: 'Waiting for you...',
     errors: {
       noPermission: 'Microphone permission is required for voice input',
       networkError: 'Connection error',

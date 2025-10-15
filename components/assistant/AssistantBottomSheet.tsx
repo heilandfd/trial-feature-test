@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useCallback, useState } from 'react'
+import React, { useEffect, useRef, useMemo, useCallback } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Keyboard } from 'react-native'
 import {
   BottomSheetModal,
@@ -192,13 +192,27 @@ export const AssistantBottomSheet: React.FC = () => {
   // Handle voice trigger press
   const handleVoiceTriggerPress = useCallback(() => {
     if (state.isListening) {
+      // If currently listening → stop and process
       stopListening()
     } else if (state.isSpeaking) {
+      // If currently speaking → stop audio
       stopSpeaking()
+    } else if (state.isConversationalMode) {
+      // If in conversational mode but idle → exit conversational mode
+      cancelListening()
     } else {
+      // If not in conversational mode → start conversational mode
       startListening()
     }
-  }, [state.isListening, state.isSpeaking, startListening, stopListening, stopSpeaking])
+  }, [
+    state.isListening,
+    state.isSpeaking,
+    state.isConversationalMode,
+    startListening,
+    stopListening,
+    stopSpeaking,
+    cancelListening,
+  ])
 
   // Backdrop component
   const renderBackdrop = useCallback(
@@ -257,6 +271,9 @@ export const AssistantBottomSheet: React.FC = () => {
     if (state.isSpeaking) {
       stopSpeaking()
     }
+    if (state.isConversationalMode) {
+      cancelListening()
+    }
 
     closeAssistant()
     clearMessages()
@@ -312,7 +329,7 @@ export const AssistantBottomSheet: React.FC = () => {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        {messages.length === 0 ? (
+        {messages.length === 0 || state.isConversationalMode ? (
           <View style={styles.emptyState}>
             <View style={styles.voiceTriggerContainer}>
               <AssistantTrigger
@@ -325,24 +342,39 @@ export const AssistantBottomSheet: React.FC = () => {
             <Text style={styles.emptyStateTitle}>
               {state.isListening
                 ? t('assistant.listening')
-                : state.isSpeaking
-                  ? t('assistant.speaking')
-                  : t('assistant.emptyStateSubtitle')}
+                : state.isProcessing
+                  ? t('assistant.processing')
+                  : state.isSpeaking
+                    ? t('assistant.speaking')
+                    : state.isConversationalMode
+                      ? t('assistant.waitingForYou')
+                      : t('assistant.emptyStateSubtitle')}
             </Text>
             <Text style={styles.emptyStateText}>
               {state.isListening
                 ? t('assistant.tapToStopRecording')
-                : state.isSpeaking
-                  ? t('assistant.tapToStopSpeaking')
-                  : t('assistant.tapToSpeak')}
+                : state.isProcessing
+                  ? ''
+                  : state.isSpeaking
+                    ? t('assistant.tapToStopSpeaking')
+                    : state.isConversationalMode
+                      ? t('assistant.tapToEndConversation')
+                      : t('assistant.tapToSpeak')}
             </Text>
+            {state.isProcessing && (
+              <View style={styles.typingIndicator}>
+                <View style={styles.typingDot} />
+                <View style={[styles.typingDot, styles.typingDot2]} />
+                <View style={[styles.typingDot, styles.typingDot3]} />
+              </View>
+            )}
           </View>
         ) : (
           messages.map(message => (
             <MessageBubble key={message.id} message={message} locale={language} />
           ))
         )}
-        {state.isProcessing && (
+        {state.isProcessing && !state.isConversationalMode && (
           <View style={styles.typingIndicator}>
             <View style={styles.typingDot} />
             <View style={[styles.typingDot, styles.typingDot2]} />

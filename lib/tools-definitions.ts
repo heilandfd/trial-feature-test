@@ -10,6 +10,7 @@
  */
 
 import { atoApi } from './ato-api'
+import { DevConfig } from './dev-config'
 
 /**
  * Tool Result Interface
@@ -76,10 +77,27 @@ export const allTools = [getUserReportTool, getCurrentTimeTool]
  */
 export async function executeGetUserReport(userId: string, authToken: string): Promise<ToolResult> {
   try {
+    // Use mock data in development mode
+    if (DevConfig.enabled) {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500))
+      const mockReport = DevConfig.createMockUserReport()
+
+      return {
+        success: true,
+        data: {
+          summary: mockReport.summary,
+          recent_activity: mockReport.recent_activity,
+          upcoming_reminders: mockReport.upcoming_reminders,
+          report_generated_at: mockReport.report_generated_at,
+        },
+      }
+    }
+
+    // Production: Real API call
     await atoApi.setAuthToken(authToken)
     const report = await atoApi.getUserReport(userId)
 
-    // Return formatted result
     return {
       success: true,
       data: {

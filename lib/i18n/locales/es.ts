@@ -150,6 +150,9 @@ export const es: Translations = {
     processing: 'Pensando...',
     startListening: 'Comenzar grabación de voz',
     stopListening: 'Detener grabación de voz',
+    tapToStopRecording: 'Toca para detener grabación',
+    tapToStopSpeaking: 'Toca para detener audio',
+    tapToSpeak: 'Toca el botón para hablar, o usa el campo de texto',
     errors: {
       noPermission: 'Se requiere permiso de micrófono para entrada de voz',
       networkError: 'Error de conexión',

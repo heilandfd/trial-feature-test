@@ -146,6 +146,9 @@ export interface Translations {
     processing: string
     startListening: string
     stopListening: string
+    tapToStopRecording: string
+    tapToStopSpeaking: string
+    tapToSpeak: string
     errors: {
       noPermission: string
       networkError: string

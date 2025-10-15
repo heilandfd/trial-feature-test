@@ -1,11 +1,20 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { TouchableOpacity, StyleSheet, View, Platform } from 'react-native'
 import Svg, { Defs, RadialGradient, Stop, Circle, Path } from 'react-native-svg'
 import * as Haptics from 'expo-haptics'
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+} from 'react-native-reanimated'
 
 interface AssistantTriggerProps {
   onPress: () => void
   isActive?: boolean
+  isListening?: boolean
   size?: number
 }
 
@@ -14,9 +23,67 @@ const INNER_RATIO = 0.76
 const HALO_WIDTH = 220
 const HALO_HEIGHT = 110
 
+const WaveRing: React.FC<{ size: number; delay: number; isListening: boolean }> = ({
+  size,
+  delay,
+  isListening,
+}) => {
+  const scale = useSharedValue(1)
+  const opacity = useSharedValue(0)
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }))
+
+  useEffect(() => {
+    if (isListening) {
+      // Start animation with delay
+      setTimeout(() => {
+        scale.value = withRepeat(
+          withSequence(
+            withTiming(1, { duration: 0 }),
+            withTiming(1.8, { duration: 2000, easing: Easing.out(Easing.quad) })
+          ),
+          -1,
+          false
+        )
+        opacity.value = withRepeat(
+          withSequence(
+            withTiming(0.3, { duration: 200 }),
+            withTiming(0, { duration: 1800, easing: Easing.out(Easing.quad) })
+          ),
+          -1,
+          false
+        )
+      }, delay)
+    } else {
+      // Stop animation
+      scale.value = withTiming(1, { duration: 300 })
+      opacity.value = withTiming(0, { duration: 300 })
+    }
+  }, [isListening, delay, scale, opacity])
+
+  return (
+    <Animated.View
+      style={[
+        styles.waveRing,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+        },
+        animatedStyle,
+      ]}
+      pointerEvents="none"
+    />
+  )
+}
+
 export const AssistantTrigger: React.FC<AssistantTriggerProps> = ({
   onPress,
   isActive = false,
+  isListening = false,
   size = DEFAULT_SIZE,
 }) => {
   const SIZE = size
@@ -30,6 +97,7 @@ export const AssistantTrigger: React.FC<AssistantTriggerProps> = ({
 
   return (
     <View style={styles.wrap} pointerEvents="box-none">
+      {/* Background Halo */}
       <View pointerEvents="none" style={styles.haloWrap}>
         <Svg width={HALO_WIDTH} height={HALO_HEIGHT} style={styles.haloSvg}>
           <Defs>
@@ -43,6 +111,16 @@ export const AssistantTrigger: React.FC<AssistantTriggerProps> = ({
         </Svg>
       </View>
 
+      {/* Wave Animation Rings (only when listening) */}
+      {isListening && (
+        <>
+          <WaveRing size={SIZE * 1.6} delay={0} isListening={isListening} />
+          <WaveRing size={SIZE * 1.6} delay={600} isListening={isListening} />
+          <WaveRing size={SIZE * 1.6} delay={1200} isListening={isListening} />
+        </>
+      )}
+
+      {/* Main Button */}
       <TouchableOpacity
         onPress={handlePress}
         activeOpacity={0.9}
@@ -106,10 +184,17 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   haloSvg: { position: 'absolute', bottom: 0 },
+  waveRing: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: '#3CCEF5',
+    backgroundColor: 'transparent',
+    zIndex: 1,
+  },
   ring: {
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
+    zIndex: 2,
     ...SHADOW_STYLES,
   },
 })

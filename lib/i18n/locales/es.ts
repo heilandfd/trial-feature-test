@@ -148,8 +148,10 @@ export const es: Translations = {
     listening: 'Escuchando...',
     speaking: 'Hablando...',
     processing: 'Pensando...',
+    startListening: 'Comenzar grabación de voz',
+    stopListening: 'Detener grabación de voz',
     errors: {
-      noPermission: 'Sin permiso de micrófono',
+      noPermission: 'Se requiere permiso de micrófono para entrada de voz',
       networkError: 'Error de conexión',
       processingError: 'Error al procesar tu mensaje',
     },

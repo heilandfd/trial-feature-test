@@ -147,8 +147,10 @@ export const en: Translations = {
     listening: 'Listening...',
     speaking: 'Speaking...',
     processing: 'Thinking...',
+    startListening: 'Start voice recording',
+    stopListening: 'Stop voice recording',
     errors: {
-      noPermission: 'No microphone permission',
+      noPermission: 'Microphone permission is required for voice input',
       networkError: 'Connection error',
       processingError: 'Error processing your message',
     },

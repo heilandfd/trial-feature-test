@@ -144,6 +144,8 @@ export interface Translations {
     listening: string
     speaking: string
     processing: string
+    startListening: string
+    stopListening: string
     errors: {
       noPermission: string
       networkError: string

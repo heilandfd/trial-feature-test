@@ -18,14 +18,32 @@ import type { Message } from '../../types/assistant'
 // Footer with internal state to prevent parent re-renders
 interface InputFooterProps {
   isProcessing: boolean
+  isListening: boolean
+  isSpeaking: boolean
   placeholder: string
   onSendMessage: (text: string) => Promise<void>
+  onStartListening: () => void
+  onStopListening: () => void
+  onCancelListening: () => void
+  onStopSpeaking: () => void
   bottomInset: number
   t: (key: string) => string
 }
 
 const InputFooter = React.memo<InputFooterProps>(
-  ({ isProcessing, placeholder, onSendMessage, bottomInset, t }) => {
+  ({
+    isProcessing,
+    isListening,
+    isSpeaking,
+    placeholder,
+    onSendMessage,
+    onStartListening,
+    onStopListening,
+    onCancelListening,
+    onStopSpeaking,
+    bottomInset,
+    t,
+  }) => {
     const [text, setText] = React.useState('')
 
     const handleSend = useCallback(async () => {
@@ -34,6 +52,29 @@ const InputFooter = React.memo<InputFooterProps>(
       setText('')
       await onSendMessage(message)
     }, [text, isProcessing, onSendMessage])
+
+    const handleMicPress = useCallback(() => {
+      if (isListening) {
+        onStopListening()
+      } else if (isSpeaking) {
+        onStopSpeaking()
+      } else {
+        onStartListening()
+      }
+    }, [isListening, isSpeaking, onStartListening, onStopListening, onStopSpeaking])
+
+    // Determine mic button icon and color
+    const getMicIcon = () => {
+      if (isListening) return 'stop-circle'
+      if (isSpeaking) return 'volume-high'
+      return 'mic'
+    }
+
+    const getMicColor = () => {
+      if (isListening) return COLORS.recording
+      if (isSpeaking) return COLORS.primary
+      return COLORS.primary
+    }
 
     return (
       <View
@@ -45,6 +86,24 @@ const InputFooter = React.memo<InputFooterProps>(
           },
         ]}
       >
+        {/* Microphone Button */}
+        <TouchableOpacity
+          onPress={handleMicPress}
+          style={[
+            styles.micButton,
+            (isListening || isSpeaking) && styles.micButtonActive,
+            isProcessing && styles.micButtonDisabled,
+          ]}
+          disabled={isProcessing}
+          accessibilityLabel={
+            isListening ? t('assistant.stopListening') : t('assistant.startListening')
+          }
+          accessibilityRole="button"
+        >
+          <Ionicons name={getMicIcon()} size={24} color={getMicColor()} />
+        </TouchableOpacity>
+
+        {/* Text Input */}
         <BottomSheetTextInput
           style={styles.input}
           placeholder={placeholder}
@@ -55,10 +114,12 @@ const InputFooter = React.memo<InputFooterProps>(
           returnKeyType="send"
           submitBehavior="submit"
           maxLength={MAX_MESSAGE_LENGTH}
-          editable={!isProcessing}
+          editable={!isProcessing && !isListening}
           accessibilityLabel={placeholder}
           accessibilityHint={t('assistant.accessibility.inputHint')}
         />
+
+        {/* Send Button */}
         <TouchableOpacity
           onPress={handleSend}
           style={[styles.sendButton, (!text.trim() || isProcessing) && styles.sendButtonDisabled]}
@@ -92,6 +153,7 @@ const COLORS = {
   primaryDark: '#00D4FF',
   userBubble: '#3B82F6',
   assistantBubble: '#F3F4F6',
+  recording: '#EF4444',
   white: '#FFFFFF',
   text: {
     primary: '#111827',
@@ -141,7 +203,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, locale }) => {
 }
 
 export const AssistantBottomSheet: React.FC = () => {
-  const { state, messages, closeAssistant, sendMessage, clearMessages } = useAssistant()
+  const {
+    state,
+    messages,
+    closeAssistant,
+    sendMessage,
+    startListening,
+    stopListening,
+    cancelListening,
+    stopSpeaking,
+    clearMessages,
+  } = useAssistant()
   const { t, language } = useI18n()
   const insets = useSafeAreaInsets()
   const bottomSheetRef = useRef<BottomSheetModal>(null)
@@ -184,14 +256,31 @@ export const AssistantBottomSheet: React.FC = () => {
       >
         <InputFooter
           isProcessing={state.isProcessing}
+          isListening={state.isListening}
+          isSpeaking={state.isSpeaking}
           placeholder={t('assistant.placeholder')}
           onSendMessage={handleSendMessage}
+          onStartListening={startListening}
+          onStopListening={stopListening}
+          onCancelListening={cancelListening}
+          onStopSpeaking={stopSpeaking}
           bottomInset={insets.bottom}
           t={t}
         />
       </BottomSheetFooter>
     ),
-    [insets.bottom, state.isProcessing, handleSendMessage, t]
+    [
+      insets.bottom,
+      state.isProcessing,
+      state.isListening,
+      state.isSpeaking,
+      handleSendMessage,
+      startListening,
+      stopListening,
+      cancelListening,
+      stopSpeaking,
+      t,
+    ]
   )
 
   // Open/close modal based on state
@@ -446,6 +535,23 @@ const styles = StyleSheet.create({
     color: COLORS.text.primary,
     borderWidth: 1,
     borderColor: COLORS.border.input,
+  },
+  micButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  micButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primaryDark,
+  },
+  micButtonDisabled: {
+    opacity: 0.5,
   },
   sendButton: {
     width: 40,

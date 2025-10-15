@@ -21,10 +21,11 @@ import { useAuth } from '../components/AuthProvider'
 import { useI18n } from '../components/I18nProvider'
 import ErrorModal from '../components/ErrorModal'
 import ContactPopup from '../components/ContactPopup'
+import { DevConfig } from '../lib/dev-config'
 
 export default function LoginScreen() {
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, reloadSession } = useAuth()
   const { t } = useI18n()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -97,36 +98,16 @@ export default function LoginScreen() {
     setVerifyingOtp(true)
 
     // Store testing bypass: accept test token for test email
-    if (email === 'gaspi+store-testing@ato.ar' && otpCode === '181302') {
-      setTimeout(() => {
-        // Create a mock session with the provided manager ID
-        const mockUser = {
-          id: '32d49772-89e0-4f23-a80d-b3211888d3a2',
-          email: 'gaspi+store-testing@ato.ar',
-          email_confirmed_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_metadata: { manager_id: '32d49772-89e0-4f23-a80d-b3211888d3a2' },
-          app_metadata: {},
-          aud: 'authenticated',
-          confirmation_sent_at: new Date().toISOString(),
-          recovery_sent_at: new Date().toISOString(),
-          email_change_sent_at: new Date().toISOString(),
-          new_email: null,
-          invited_at: null,
-          action_link: null,
-          phone: null,
-          phone_confirmed_at: null,
-          phone_change_sent_at: null,
-          confirmed_at: new Date().toISOString(),
-          email_change_confirm_status: 0,
-          banned_until: null,
-          reauthentication_sent_at: null,
-          is_anonymous: false,
-        } as any
+    if (DevConfig.isTestEmail(email) && DevConfig.isTestOtp(otpCode)) {
+      setTimeout(async () => {
+        // Create a mock session for store testing
+        const mockUser = DevConfig.createMockUser()
 
         // Store the mock user data for store testing
-        AsyncStorage.setItem('ato-store-testing-user', JSON.stringify(mockUser))
+        await AsyncStorage.setItem(DevConfig.storageKeys.storeTestingUser, JSON.stringify(mockUser))
+
+        // Reload session to pick up the mock user
+        await reloadSession()
 
         setVerifyingOtp(false)
         router.replace('/dashboard')
@@ -173,7 +154,7 @@ export default function LoginScreen() {
     }
 
     // Store testing bypass: skip server request for test email
-    if (email === 'gaspi+store-testing@ato.ar') {
+    if (DevConfig.isTestEmail(email)) {
       setLoading(true)
       setTimeout(() => {
         setEmailSent(true)

@@ -4,12 +4,14 @@ import { supabase } from '../lib/supabase'
 import * as Linking from 'expo-linking'
 import * as QueryParams from 'expo-auth-session/build/QueryParams'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { DevConfig } from '../lib/dev-config'
 
 interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
   signOut: () => Promise<void>
+  reloadSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -26,6 +28,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+
+  /**
+   * Load store testing session from AsyncStorage
+   */
+  const loadStoreTestingSession = async (): Promise<boolean> => {
+    try {
+      const userData = await AsyncStorage.getItem(DevConfig.storageKeys.storeTestingUser)
+      if (userData) {
+        const mockUser = JSON.parse(userData) as User
+        setUser(mockUser)
+        setSession(DevConfig.createMockSession(mockUser))
+        return true
+      }
+    } catch (error) {
+      console.error('Error loading store testing session:', error)
+    }
+    return false
+  }
 
   const createSessionFromUrl = async (url: string) => {
     try {
@@ -50,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       // Clear store testing data if present
-      await AsyncStorage.removeItem('ato-store-testing-user')
+      await AsyncStorage.removeItem(DevConfig.storageKeys.storeTestingUser)
 
       // Sign out from Supabase
       await supabase.auth.signOut()
@@ -63,27 +83,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const reloadSession = async () => {
+    try {
+      // Check for store testing session first
+      const loaded = await loadStoreTestingSession()
+      if (loaded) return
+
+      // Check Supabase session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      setSession(session)
+      setUser(session?.user ?? null)
+    } catch (error) {
+      console.error('Error reloading session:', error)
+    }
+  }
+
   useEffect(() => {
     const initializeAuth = async () => {
       // Check for store testing mode first
-      try {
-        const storeTestingUser = await AsyncStorage.getItem('ato-store-testing-user')
-        if (storeTestingUser) {
-          const mockUser = JSON.parse(storeTestingUser) as User
-          setUser(mockUser)
-          setSession({
-            user: mockUser,
-            access_token: 'store-testing-token',
-            refresh_token: 'store-testing-refresh',
-            expires_in: 3600,
-            token_type: 'bearer',
-            expires_at: Date.now() / 1000 + 3600
-          } as Session)
-          setLoading(false)
-          return
-        }
-      } catch (error) {
-        console.error('Error checking store testing mode:', error)
+      const loaded = await loadStoreTestingSession()
+      if (loaded) {
+        setLoading(false)
+        return
       }
 
       // Get initial session from Supabase
@@ -101,8 +124,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       // Don't override store testing mode
-      const storeTestingUser = await AsyncStorage.getItem('ato-store-testing-user')
-      if (!storeTestingUser) {
+      const storeTestingData = await AsyncStorage.getItem(DevConfig.storageKeys.storeTestingUser)
+      if (!storeTestingData) {
         setSession(session)
         setUser(session?.user ?? null)
       }
@@ -140,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     loading,
     signOut,
+    reloadSession,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

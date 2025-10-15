@@ -147,7 +147,7 @@ export const AssistantBottomSheet: React.FC = () => {
   const bottomSheetRef = useRef<BottomSheetModal>(null)
   const scrollViewRef = useRef<any>(null) // BottomSheetScrollView doesn't export ref type
 
-  const snapPoints = useMemo(() => ['75%'], [])
+  const snapPoints = useMemo(() => ['90%'], [])
 
   // Handle sending messages
   const handleSendMessage = useCallback(
@@ -224,6 +224,7 @@ export const AssistantBottomSheet: React.FC = () => {
       ref={bottomSheetRef}
       snapPoints={snapPoints}
       enablePanDownToClose
+      enableDynamicSizing={false}
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
       footerComponent={renderFooter}
@@ -231,7 +232,7 @@ export const AssistantBottomSheet: React.FC = () => {
       handleIndicatorStyle={styles.handleIndicator}
       keyboardBehavior="extend"
       keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
+      android_keyboardInputMode="adjustPan"
     >
       {/* Header */}
       <View style={styles.header}>

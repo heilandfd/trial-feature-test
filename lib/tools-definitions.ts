@@ -76,18 +76,8 @@ export const allTools = [getUserReportTool, getCurrentTimeTool]
  */
 export async function executeGetUserReport(userId: string, authToken: string): Promise<ToolResult> {
   try {
-    console.log('[Tools] Executing getUserReport for userId:', userId)
-
-    // Set the auth token for the API call
     await atoApi.setAuthToken(authToken)
-
-    // Call the API
     const report = await atoApi.getUserReport(userId)
-
-    console.log('[Tools] getUserReport success:', {
-      reminders: report.summary.total_reminders,
-      contacts: report.summary.total_contacts,
-    })
 
     // Return formatted result
     return {
@@ -119,8 +109,6 @@ export async function executeGetUserReport(userId: string, authToken: string): P
 export function executeGetCurrentTime(locale: string = 'en-US'): ToolResult {
   try {
     const now = new Date()
-
-    console.log('[Tools] Executing getCurrentTime')
 
     return {
       success: true,
@@ -163,8 +151,6 @@ export async function executeTool(
   args: any,
   context: { authToken?: string; locale?: string }
 ): Promise<ToolResult> {
-  console.log('[Tools] Executing tool:', toolName, 'with args:', args)
-
   switch (toolName) {
     case 'getUserReport':
       if (!args.userId) {

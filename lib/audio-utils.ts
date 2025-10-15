@@ -10,7 +10,7 @@
  * Uses expo-av for all audio operations.
  */
 
-import { Audio } from 'expo-av'
+import { Audio, type AVPlaybackStatus } from 'expo-av'
 import * as FileSystem from 'expo-file-system'
 
 /**
@@ -24,26 +24,23 @@ import * as FileSystem from 'expo-file-system'
  */
 const RECORDING_OPTIONS: Audio.RecordingOptions = {
   android: {
-    extension: '.wav',
-    outputFormat: Audio.AndroidOutputFormat.DEFAULT,
-    audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
-    sampleRate: 24000,
+    extension: '.m4a',
+    outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+    audioEncoder: Audio.AndroidAudioEncoder.AAC,
+    sampleRate: 44100,
     numberOfChannels: 1,
     bitRate: 128000,
   },
   ios: {
-    extension: '.wav',
-    outputFormat: Audio.IOSOutputFormat.LINEARPCM,
+    extension: '.m4a',
+    outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
     audioQuality: Audio.IOSAudioQuality.HIGH,
-    sampleRate: 24000,
+    sampleRate: 44100,
     numberOfChannels: 1,
     bitRate: 128000,
-    linearPCMBitDepth: 16,
-    linearPCMIsBigEndian: false,
-    linearPCMIsFloat: false,
   },
   web: {
-    mimeType: 'audio/wav',
+    mimeType: 'audio/mp4',
     bitsPerSecond: 128000,
   },
 }
@@ -58,15 +55,12 @@ const RECORDING_OPTIONS: Audio.RecordingOptions = {
  */
 export async function requestMicrophonePermission(): Promise<boolean> {
   try {
-    console.log('[Audio] Requesting microphone permission...')
-
     const { status } = await Audio.requestPermissionsAsync()
 
     if (status === 'granted') {
-      console.log('[Audio] Microphone permission granted')
       return true
     } else {
-      console.log('[Audio] Microphone permission denied')
+      console.error('[Audio] Microphone permission denied')
       return false
     }
   } catch (error) {
@@ -104,9 +98,6 @@ export async function checkMicrophonePermission(): Promise<boolean> {
  */
 export async function startRecording(): Promise<Audio.Recording> {
   try {
-    console.log('[Audio] Starting recording...')
-
-    // Set audio mode for recording
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
       playsInSilentModeIOS: true,
@@ -114,14 +105,10 @@ export async function startRecording(): Promise<Audio.Recording> {
       staysActiveInBackground: false,
     })
 
-    // Create and prepare recording
     const recording = new Audio.Recording()
     await recording.prepareToRecordAsync(RECORDING_OPTIONS)
-
-    // Start recording
     await recording.startAsync()
 
-    console.log('[Audio] Recording started successfully')
     return recording
   } catch (error) {
     console.error('[Audio] Error starting recording:', error)
@@ -140,8 +127,6 @@ export async function startRecording(): Promise<Audio.Recording> {
  */
 export async function stopRecording(recording: Audio.Recording): Promise<string> {
   try {
-    console.log('[Audio] Stopping recording...')
-
     await recording.stopAndUnloadAsync()
     const uri = recording.getURI()
 
@@ -149,15 +134,6 @@ export async function stopRecording(recording: Audio.Recording): Promise<string>
       throw new Error('No URI returned from recording')
     }
 
-    // Get file info for debugging
-    const fileInfo = await FileSystem.getInfoAsync(uri)
-    console.log('[Audio] Recording stopped. File info:', {
-      uri,
-      size: 'size' in fileInfo ? fileInfo.size : 'unknown',
-      exists: fileInfo.exists,
-    })
-
-    // Reset audio mode
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
       playsInSilentModeIOS: true,
@@ -189,32 +165,6 @@ export async function getRecordingDuration(recording: Audio.Recording): Promise<
 }
 
 /**
- * Read audio file as base64
- *
- * This is used to send audio to OpenAI Realtime API.
- *
- * @param uri - File URI of the audio
- * @returns Promise<string> - Base64 encoded audio data
- */
-export async function readAudioAsBase64(uri: string): Promise<string> {
-  try {
-    console.log('[Audio] Reading audio file as base64:', uri)
-
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    })
-
-    console.log('[Audio] Audio file read successfully, size:', base64.length, 'chars')
-    return base64
-  } catch (error) {
-    console.error('[Audio] Error reading audio file:', error)
-    throw new Error(
-      'Failed to read audio file: ' + (error instanceof Error ? error.message : 'Unknown error')
-    )
-  }
-}
-
-/**
  * Delete audio file
  *
  * Clean up temporary audio files after use.
@@ -223,12 +173,9 @@ export async function readAudioAsBase64(uri: string): Promise<string> {
  */
 export async function deleteAudioFile(uri: string): Promise<void> {
   try {
-    console.log('[Audio] Deleting audio file:', uri)
     await FileSystem.deleteAsync(uri, { idempotent: true })
-    console.log('[Audio] Audio file deleted')
   } catch (error) {
-    console.error('[Audio] Error deleting audio file:', error)
-    // Don't throw - deletion errors are not critical
+    console.error('[Audio] Error deleting file:', error)
   }
 }
 
@@ -242,9 +189,6 @@ export async function deleteAudioFile(uri: string): Promise<void> {
  */
 export async function playAudio(uri: string): Promise<Audio.Sound> {
   try {
-    console.log('[Audio] Playing audio from URI:', uri.substring(0, 50) + '...')
-
-    // Set audio mode for playback
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
       playsInSilentModeIOS: true,
@@ -252,14 +196,12 @@ export async function playAudio(uri: string): Promise<Audio.Sound> {
       staysActiveInBackground: false,
     })
 
-    // Load and play sound
     const { sound } = await Audio.Sound.createAsync(
       { uri },
       { shouldPlay: true },
       onPlaybackStatusUpdate
     )
 
-    console.log('[Audio] Audio playback started')
     return sound
   } catch (error) {
     console.error('[Audio] Error playing audio:', error)
@@ -276,13 +218,10 @@ export async function playAudio(uri: string): Promise<Audio.Sound> {
  */
 export async function stopAudio(sound: Audio.Sound): Promise<void> {
   try {
-    console.log('[Audio] Stopping audio playback')
     await sound.stopAsync()
     await sound.unloadAsync()
-    console.log('[Audio] Audio playback stopped')
   } catch (error) {
     console.error('[Audio] Error stopping audio:', error)
-    // Don't throw - stopping errors are not critical
   }
 }
 
@@ -291,50 +230,10 @@ export async function stopAudio(sound: Audio.Sound): Promise<void> {
  *
  * Logs playback progress and handles completion.
  */
-function onPlaybackStatusUpdate(status: Audio.AVPlaybackStatus) {
-  if (status.isLoaded) {
-    if (status.didJustFinish) {
-      console.log('[Audio] Playback finished')
-    }
-    if (status.isPlaying) {
-      // Could update UI with progress here if needed
-      // console.log('[Audio] Playing:', status.positionMillis, '/', status.durationMillis)
-    }
-  } else if (status.error) {
+function onPlaybackStatusUpdate(status: AVPlaybackStatus) {
+  if (!status.isLoaded && status.error) {
     console.error('[Audio] Playback error:', status.error)
   }
 }
 
-/**
- * Convert base64 audio to playable URI
- *
- * OpenAI returns audio as base64, we need to convert it to a file URI for playback.
- *
- * @param base64Audio - Base64 encoded audio data
- * @param format - Audio format extension (default: 'wav')
- * @returns Promise<string> - File URI for playback
- */
-export async function base64ToAudioUri(
-  base64Audio: string,
-  format: string = 'wav'
-): Promise<string> {
-  try {
-    // Create temporary file path
-    const fileUri = `${FileSystem.cacheDirectory}response_audio_${Date.now()}.${format}`
-
-    console.log('[Audio] Converting base64 to audio file:', fileUri)
-
-    // Write base64 data to file
-    await FileSystem.writeAsStringAsync(fileUri, base64Audio, {
-      encoding: FileSystem.EncodingType.Base64,
-    })
-
-    console.log('[Audio] Audio file created successfully')
-    return fileUri
-  } catch (error) {
-    console.error('[Audio] Error converting base64 to audio:', error)
-    throw new Error(
-      'Failed to convert audio: ' + (error instanceof Error ? error.message : 'Unknown error')
-    )
-  }
-}
+// REMOVED: base64ToAudioUri - no longer needed, TTS uses react-native-blob-util directly

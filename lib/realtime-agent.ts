@@ -1,7 +1,7 @@
 /**
  * OpenAI Realtime Agent (Chained Architecture)
  *
- * This implements the "chained" approach recommended by OpenAI:
+ * This implements the chained approach recommended by OpenAI:
  * https://platform.openai.com/docs/guides/voice-agents?voice-agent-architecture=chained
  *
  * Flow:
@@ -19,17 +19,16 @@
 
 import { Audio } from 'expo-av'
 import type { Message } from '../types/assistant'
-import { allTools, executeTool, type ToolResult } from './tools-definitions'
+import { allTools, executeTool } from './tools-definitions'
 import {
   startRecording,
   stopRecording,
-  readAudioAsBase64,
   deleteAudioFile,
   playAudio,
   stopAudio,
-  base64ToAudioUri,
   requestMicrophonePermission,
 } from './audio-utils'
+import ReactNativeBlobUtil from 'react-native-blob-util'
 
 // OpenAI API configuration
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY
@@ -125,26 +124,20 @@ Assistant: "Hello! I'm Ato, your assistant. I can help you check on ${userName},
  */
 async function transcribeAudio(audioUri: string, language: string): Promise<string> {
   try {
-    console.log('[RealtimeAgent] Transcribing audio with Whisper...')
-
-    // Read audio file as base64
-    const audioBase64 = await readAudioAsBase64(audioUri)
-
-    // Convert base64 to blob for upload
-    const audioData = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))
-    const blob = new Blob([audioData], { type: 'audio/wav' })
-
-    // Create form data
     const formData = new FormData()
-    formData.append('file', blob, 'audio.wav')
+    formData.append('file', {
+      uri: audioUri,
+      type: 'audio/m4a',
+      name: 'audio.m4a',
+    } as any)
     formData.append('model', 'whisper-1')
     formData.append('language', language)
 
-    // Call Whisper API
     const response = await fetch(`${OPENAI_API_BASE}/audio/transcriptions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'multipart/form-data',
       },
       body: formData,
     })
@@ -155,10 +148,7 @@ async function transcribeAudio(audioUri: string, language: string): Promise<stri
     }
 
     const result = await response.json()
-    const transcribedText = result.text
-
-    console.log('[RealtimeAgent] Transcription successful:', transcribedText)
-    return transcribedText
+    return result.text
   } catch (error) {
     console.error('[RealtimeAgent] Transcription error:', error)
     throw new Error(
@@ -192,8 +182,6 @@ export async function processMessageWithLLM(
   }
 ): Promise<string> {
   try {
-    console.log('[RealtimeAgent] Processing message with LLM...')
-
     // Convert message history to OpenAI format
     const messages = [
       {
@@ -241,15 +229,13 @@ export async function processMessageWithLLM(
       const functionName = functionCall.name
       const functionArgs = JSON.parse(functionCall.arguments)
 
-      console.log('[RealtimeAgent] LLM requested function call:', functionName, functionArgs)
+      console.log('[RealtimeAgent] Function call:', functionName)
 
       // Execute the tool
       const toolResult = await executeTool(functionName, functionArgs, {
         authToken: context.authToken,
         locale: context.language === 'es' ? 'es-ES' : 'en-US',
       })
-
-      console.log('[RealtimeAgent] Tool execution result:', toolResult)
 
       // Call LLM again with function result
       const messagesWithToolResult = [
@@ -286,16 +272,11 @@ export async function processMessageWithLLM(
       }
 
       const finalResult = await response.json()
-      const finalResponse = finalResult.choices[0].message.content
-
-      console.log('[RealtimeAgent] LLM final response after tool call:', finalResponse)
-      return finalResponse
+      return finalResult.choices[0].message.content
     }
 
     // No function call, return direct response
-    const responseText = choice.message.content
-    console.log('[RealtimeAgent] LLM response:', responseText)
-    return responseText
+    return choice.message.content
   } catch (error) {
     console.error('[RealtimeAgent] LLM processing error:', error)
     throw new Error(
@@ -313,39 +294,33 @@ export async function processMessageWithLLM(
  */
 export async function textToSpeech(text: string, language: string): Promise<string> {
   try {
-    console.log('[RealtimeAgent] Converting text to speech...')
+    const fileName = `tts_response_${Date.now()}.mp3`
+    const filePath = `${ReactNativeBlobUtil.fs.dirs.CacheDir}/${fileName}`
 
-    // Call OpenAI TTS API
-    const response = await fetch(`${OPENAI_API_BASE}/audio/speech`, {
-      method: 'POST',
-      headers: {
+    const response = await ReactNativeBlobUtil.config({
+      path: filePath,
+      fileCache: true,
+    }).fetch(
+      'POST',
+      `${OPENAI_API_BASE}/audio/speech`,
+      {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({
+      JSON.stringify({
         model: 'tts-1',
         input: text,
-        voice: 'alloy', // Options: alloy, echo, fable, onyx, nova, shimmer
+        voice: 'alloy',
         response_format: 'mp3',
         speed: 1.0,
-      }),
-    })
+      })
+    )
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`TTS API error: ${response.status} - ${errorText}`)
+    if (response.respInfo.status !== 200) {
+      throw new Error(`TTS API error: ${response.respInfo.status}`)
     }
 
-    // Get audio data as base64
-    const audioBlob = await response.blob()
-    const arrayBuffer = await audioBlob.arrayBuffer()
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-
-    // Convert to file URI
-    const audioUri = await base64ToAudioUri(base64Audio, 'mp3')
-
-    console.log('[RealtimeAgent] TTS successful, audio file:', audioUri)
-    return audioUri
+    return `file://${response.path()}`
   } catch (error) {
     console.error('[RealtimeAgent] TTS error:', error)
     throw new Error(
@@ -387,15 +362,12 @@ export class RealtimeAgent {
    */
   async startListening(): Promise<void> {
     if (this.isRecording) {
-      console.warn('[RealtimeAgent] Already recording')
       return
     }
 
     try {
-      console.log('[RealtimeAgent] Starting to listen...')
       this.recording = await startRecording()
       this.isRecording = true
-      console.log('[RealtimeAgent] Listening started')
     } catch (error) {
       console.error('[RealtimeAgent] Failed to start listening:', error)
       this.isRecording = false
@@ -436,14 +408,10 @@ export class RealtimeAgent {
     }
 
     try {
-      console.log('[RealtimeAgent] Stopping recording and processing...')
-
       // 1. Stop recording and get audio file
       const audioUri = await stopRecording(this.recording)
       this.isRecording = false
       this.recording = null
-
-      console.log('[RealtimeAgent] Audio file saved:', audioUri)
 
       // 2. Transcribe audio to text (Whisper)
       const transcribedText = await transcribeAudio(
@@ -451,17 +419,11 @@ export class RealtimeAgent {
         context.language === 'es' ? 'es' : 'en'
       )
 
-      console.log('[RealtimeAgent] Transcription:', transcribedText)
-
       // 3. Process with LLM (may include function calling)
       const responseText = await processMessageWithLLM(transcribedText, history, context)
 
-      console.log('[RealtimeAgent] LLM response:', responseText)
-
       // 4. Convert response to speech
       const responseAudioUri = await textToSpeech(responseText, context.language)
-
-      console.log('[RealtimeAgent] TTS complete:', responseAudioUri)
 
       // 5. Clean up input audio file
       await deleteAudioFile(audioUri)
@@ -489,7 +451,6 @@ export class RealtimeAgent {
         await deleteAudioFile(uri)
         this.isRecording = false
         this.recording = null
-        console.log('[RealtimeAgent] Recording cancelled')
       } catch (error) {
         console.error('[RealtimeAgent] Error cancelling recording:', error)
         this.isRecording = false
@@ -509,16 +470,12 @@ export class RealtimeAgent {
     }
 
     try {
-      console.log('[RealtimeAgent] Playing response...')
       this.currentSound = await playAudio(audioUri)
       this.isSpeaking = true
 
-      // Set up listener for when playback finishes
       this.currentSound.setOnPlaybackStatusUpdate(status => {
         if (status.isLoaded && status.didJustFinish) {
           this.isSpeaking = false
-          console.log('[RealtimeAgent] Playback finished')
-          // Clean up audio file after playing
           deleteAudioFile(audioUri).catch(console.error)
         }
       })
@@ -538,7 +495,6 @@ export class RealtimeAgent {
         await stopAudio(this.currentSound)
         this.isSpeaking = false
         this.currentSound = null
-        console.log('[RealtimeAgent] Speaking stopped')
       } catch (error) {
         console.error('[RealtimeAgent] Error stopping speaking:', error)
         this.isSpeaking = false
@@ -574,19 +530,11 @@ export class RealtimeAgent {
     responseAudioUri?: string
   }> {
     try {
-      console.log('[RealtimeAgent] Processing text message...')
-
-      // 1. Process with LLM
       const responseText = await processMessageWithLLM(message, history, context)
 
-      console.log('[RealtimeAgent] LLM response:', responseText)
-
-      // 2. Optionally generate TTS
       let responseAudioUri: string | undefined
-
       if (withVoice) {
         responseAudioUri = await textToSpeech(responseText, context.language)
-        console.log('[RealtimeAgent] TTS generated:', responseAudioUri)
       }
 
       return {

@@ -17,7 +17,11 @@
     },
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.AtoApp",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app needs microphone access for voice input to the assistant."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +29,9 @@
         "backgroundColor": "#ffffff"
       },
       "softwareKeyboardLayoutMode": "pan",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": ["RECORD_AUDIO"],
+      "package": "com.anonymous.AtoApp"
     },
     "web": {
       "bundler": "metro",

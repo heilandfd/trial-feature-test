@@ -19,6 +19,7 @@ export interface AssistantState {
   isListening: boolean
   isSpeaking: boolean
   isProcessing: boolean
+  isConversationalMode: boolean // Auto-listen after speaking
 }
 
 export interface ToolResult {

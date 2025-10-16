@@ -1,6 +1,5 @@
 import React from 'react'
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
 import { useI18n } from './I18nProvider'
 
 interface ErrorModalProps {

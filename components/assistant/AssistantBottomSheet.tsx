@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo, useCallback } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Keyboard } from 'react-native'
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useAssistant } from '../../contexts/AssistantContext'
 import { useI18n } from '../I18nProvider'
 import type { Message } from '../../types/assistant'
+import { AssistantTrigger } from './AssistantTrigger'
 
 // Footer with internal state to prevent parent re-renders
 interface InputFooterProps {
@@ -92,6 +93,7 @@ const COLORS = {
   primaryDark: '#00D4FF',
   userBubble: '#3B82F6',
   assistantBubble: '#F3F4F6',
+  recording: '#EF4444',
   white: '#FFFFFF',
   text: {
     primary: '#111827',
@@ -141,13 +143,39 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, locale }) => {
 }
 
 export const AssistantBottomSheet: React.FC = () => {
-  const { state, messages, closeAssistant, sendMessage, clearMessages } = useAssistant()
+  const {
+    state,
+    messages,
+    closeAssistant,
+    sendMessage,
+    startListening,
+    stopListening,
+    cancelListening,
+    stopSpeaking,
+    clearMessages,
+  } = useAssistant()
   const { t, language } = useI18n()
   const insets = useSafeAreaInsets()
   const bottomSheetRef = useRef<BottomSheetModal>(null)
   const scrollViewRef = useRef<any>(null) // BottomSheetScrollView doesn't export ref type
 
   const snapPoints = useMemo(() => ['90%'], [])
+
+  // Handle keyboard show/hide
+  useEffect(() => {
+    const keyboardWillShow = () => {
+      // Force bottom sheet to expand when keyboard shows
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(0)
+      }, 50)
+    }
+
+    const showSubscription = Keyboard.addListener('keyboardDidShow', keyboardWillShow)
+
+    return () => {
+      showSubscription?.remove()
+    }
+  }, [])
 
   // Handle sending messages
   const handleSendMessage = useCallback(
@@ -160,6 +188,31 @@ export const AssistantBottomSheet: React.FC = () => {
     },
     [sendMessage]
   )
+
+  // Handle voice trigger press
+  const handleVoiceTriggerPress = useCallback(() => {
+    if (state.isListening) {
+      // If currently listening → stop and process
+      stopListening()
+    } else if (state.isSpeaking) {
+      // If currently speaking → stop audio
+      stopSpeaking()
+    } else if (state.isConversationalMode) {
+      // If in conversational mode but idle → exit conversational mode
+      cancelListening()
+    } else {
+      // If not in conversational mode → start conversational mode
+      startListening()
+    }
+  }, [
+    state.isListening,
+    state.isSpeaking,
+    state.isConversationalMode,
+    startListening,
+    stopListening,
+    stopSpeaking,
+    cancelListening,
+  ])
 
   // Backdrop component
   const renderBackdrop = useCallback(
@@ -211,6 +264,17 @@ export const AssistantBottomSheet: React.FC = () => {
   }, [messages])
 
   const handleDismiss = () => {
+    // Stop any ongoing voice operations when closing
+    if (state.isListening) {
+      cancelListening()
+    }
+    if (state.isSpeaking) {
+      stopSpeaking()
+    }
+    if (state.isConversationalMode) {
+      cancelListening()
+    }
+
     closeAssistant()
     clearMessages()
   }
@@ -265,18 +329,52 @@ export const AssistantBottomSheet: React.FC = () => {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        {messages.length === 0 ? (
+        {messages.length === 0 || state.isConversationalMode ? (
           <View style={styles.emptyState}>
-            <Ionicons name="chatbubbles-outline" size={64} color={COLORS.icon.empty} />
-            <Text style={styles.emptyStateTitle}>{t('assistant.emptyStateSubtitle')}</Text>
-            <Text style={styles.emptyStateText}>{t('assistant.emptyStateTitle')}</Text>
+            <View style={styles.voiceTriggerContainer}>
+              <AssistantTrigger
+                onPress={handleVoiceTriggerPress}
+                isActive={state.isListening || state.isSpeaking}
+                isListening={state.isListening}
+                size={80}
+              />
+            </View>
+            <Text style={styles.emptyStateTitle}>
+              {state.isListening
+                ? t('assistant.listening')
+                : state.isProcessing
+                  ? t('assistant.processing')
+                  : state.isSpeaking
+                    ? t('assistant.speaking')
+                    : state.isConversationalMode
+                      ? t('assistant.waitingForYou')
+                      : t('assistant.emptyStateSubtitle')}
+            </Text>
+            <Text style={styles.emptyStateText}>
+              {state.isListening
+                ? t('assistant.tapToStopRecording')
+                : state.isProcessing
+                  ? ''
+                  : state.isSpeaking
+                    ? t('assistant.tapToStopSpeaking')
+                    : state.isConversationalMode
+                      ? t('assistant.tapToEndConversation')
+                      : t('assistant.tapToSpeak')}
+            </Text>
+            {state.isProcessing && (
+              <View style={styles.typingIndicator}>
+                <View style={styles.typingDot} />
+                <View style={[styles.typingDot, styles.typingDot2]} />
+                <View style={[styles.typingDot, styles.typingDot3]} />
+              </View>
+            )}
           </View>
         ) : (
           messages.map(message => (
             <MessageBubble key={message.id} message={message} locale={language} />
           ))
         )}
-        {state.isProcessing && (
+        {state.isProcessing && !state.isConversationalMode && (
           <View style={styles.typingIndicator}>
             <View style={styles.typingDot} />
             <View style={[styles.typingDot, styles.typingDot2]} />
@@ -346,6 +444,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
+  },
+  voiceTriggerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
   emptyStateTitle: {
     fontSize: 20,

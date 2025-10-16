@@ -55,6 +55,14 @@ const RECORDING_OPTIONS: Audio.RecordingOptions = {
  */
 export async function requestMicrophonePermission(): Promise<boolean> {
   try {
+    // First check if we already have permission
+    const { status: existingStatus } = await Audio.getPermissionsAsync()
+
+    if (existingStatus === 'granted') {
+      return true
+    }
+
+    // Only request if we don't have it
     const { status } = await Audio.requestPermissionsAsync()
 
     if (status === 'granted') {

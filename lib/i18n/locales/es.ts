@@ -139,4 +139,24 @@ export const es: Translations = {
     smsError: 'No se pudo abrir SMS',
     emailError: 'No se pudo abrir el cliente de correo',
   },
+  assistant: {
+    defaultUserName: 'tu familiar',
+    header: 'Soy Ato, ¿hablamos de {userName}?',
+    placeholder: 'También podés escribirme...',
+    emptyStateTitle: 'Hola, soy tu asistente.',
+    emptyStateSubtitle: '¿En qué puedo ayudarte?',
+    listening: 'Escuchando...',
+    speaking: 'Hablando...',
+    processing: 'Pensando...',
+    errors: {
+      noPermission: 'Sin permiso de micrófono',
+      networkError: 'Error de conexión',
+      processingError: 'Error al procesar tu mensaje',
+    },
+    accessibility: {
+      inputHint: 'Ingresa tu mensaje para enviar al asistente',
+      sendButton: 'Enviar mensaje',
+      closeButton: 'Cerrar el asistente',
+    },
+  },
 }

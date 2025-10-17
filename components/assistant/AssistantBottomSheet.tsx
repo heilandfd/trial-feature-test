@@ -350,6 +350,12 @@ export const AssistantBottomSheet: React.FC = () => {
                       ? t('assistant.waitingForYou')
                       : t('assistant.emptyStateSubtitle')}
             </Text>
+            {/* Show last message in conversational mode for context */}
+            {state.isConversationalMode && messages.length > 0 && (
+              <Text style={styles.lastMessagePreview} numberOfLines={4}>
+                {messages[messages.length - 1].content}
+              </Text>
+            )}
             <Text style={styles.emptyStateText}>
               {state.isListening
                 ? t('assistant.tapToStopRecording')
@@ -456,6 +462,17 @@ const styles = StyleSheet.create({
     color: COLORS.text.tertiary,
     marginTop: 16,
     marginBottom: 8,
+  },
+  lastMessagePreview: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+    marginTop: 8,
+    marginHorizontal: 32,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    opacity: 0.8,
+    lineHeight: 20,
+    maxHeight: 60,
   },
   emptyStateText: {
     fontSize: 14,

@@ -44,9 +44,14 @@ if (!OPENAI_API_KEY) {
  *
  * @param audioUri - URI of the audio file to transcribe
  * @param language - Language code ('en' or 'es')
+ * @param prompt - Optional context from previous message for better accuracy
  * @returns Promise<string> - Transcribed text
  */
-async function transcribeAudio(audioUri: string, language: string): Promise<string> {
+export async function transcribeAudio(
+  audioUri: string,
+  language: string,
+  prompt?: string
+): Promise<string> {
   try {
     const formData = new FormData()
     formData.append('file', {
@@ -56,6 +61,13 @@ async function transcribeAudio(audioUri: string, language: string): Promise<stri
     } as any)
     formData.append('model', 'whisper-1')
     formData.append('language', language)
+    formData.append('response_format', 'text') // Faster than json
+    formData.append('temperature', '0') // Deterministic, faster
+
+    // Add context from previous message for better accuracy
+    if (prompt && prompt.trim()) {
+      formData.append('prompt', prompt.substring(0, 200)) // Max 200 chars
+    }
 
     const response = await fetch(`${OPENAI_API_BASE}/audio/transcriptions`, {
       method: 'POST',
@@ -71,8 +83,9 @@ async function transcribeAudio(audioUri: string, language: string): Promise<stri
       throw new Error(`Whisper API error: ${response.status} - ${errorText}`)
     }
 
-    const result = await response.json()
-    return result.text
+    // response_format='text' returns plain text, not JSON
+    const text = await response.text()
+    return text
   } catch (error) {
     console.error('[RealtimeAgent] Transcription error:', error)
     throw new Error(
@@ -82,16 +95,34 @@ async function transcribeAudio(audioUri: string, language: string): Promise<stri
 }
 
 /**
- * Process message with LLM (GPT-4o-mini)
+ * Helper: Check if text has complete sentence
+ */
+function hasCompleteSentence(text: string): boolean {
+  return /[.!?]\s+\S/.test(text) || /[.!?]$/.test(text.trim())
+}
+
+/**
+ * Helper: Extract first complete sentence
+ */
+function getFirstSentence(text: string): string {
+  const match = text.match(/^(.+?[.!?])/)
+  return match ? match[1].trim() : text
+}
+
+/**
+ * Process message with LLM (GPT-4o-mini) with streaming support
  *
  * Handles:
  * - General conversation
  * - Intent detection
  * - Function calling (tools)
+ * - Streaming responses for lower latency
+ * - Optional callback for early TTS
  *
  * @param userMessage - User's message text
  * @param history - Conversation history
  * @param context - Context (user info, auth token, etc.)
+ * @param onFirstSentence - Callback fired when first complete sentence is ready
  * @returns Promise<string> - AI response text
  */
 export async function processMessageWithLLM(
@@ -103,7 +134,8 @@ export async function processMessageWithLLM(
     language: string
     userId?: string
     authToken?: string
-  }
+  },
+  onFirstSentence?: (sentence: string) => void
 ): Promise<string> {
   try {
     // Convert message history to OpenAI format
@@ -122,34 +154,95 @@ export async function processMessageWithLLM(
       },
     ]
 
-    // Call GPT-4o-mini with function calling
-    let response = await fetch(`${OPENAI_API_BASE}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages,
-        functions: allTools,
-        function_call: 'auto',
-        max_tokens: 500,
-        temperature: 0.7,
-      }),
+    // Use XMLHttpRequest for streaming (React Native compatible)
+    const fullText = await new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+
+      let buffer = ''
+      let accumulated = ''
+      let functionCall: any = null
+      let firstSentenceFired = false
+
+      xhr.open('POST', `${OPENAI_API_BASE}/chat/completions`)
+      xhr.setRequestHeader('Content-Type', 'application/json')
+      xhr.setRequestHeader('Authorization', `Bearer ${OPENAI_API_KEY}`)
+
+      xhr.onprogress = () => {
+        // Get new data
+        const newData = xhr.responseText.slice(buffer.length)
+        buffer = xhr.responseText
+
+        // Parse SSE chunks
+        const lines = newData.split('\n')
+        for (const line of lines) {
+          if (line.trim() === '' || line.trim() === 'data: [DONE]') continue
+          if (!line.startsWith('data: ')) continue
+
+          try {
+            const data = JSON.parse(line.slice(6))
+            const delta = data.choices[0].delta
+
+            // Check for function call
+            if (delta.function_call) {
+              if (!functionCall) {
+                functionCall = { name: delta.function_call.name || '', arguments: '' }
+              }
+              if (delta.function_call.arguments) {
+                functionCall.arguments += delta.function_call.arguments
+              }
+            }
+
+            // Accumulate content
+            if (delta.content) {
+              accumulated += delta.content
+
+              // Fire callback when we have enough text (for early TTS)
+              // Strategy: Wait for 30+ chars with complete sentence
+              if (!firstSentenceFired && !functionCall && onFirstSentence) {
+                if (accumulated.length >= 30 && hasCompleteSentence(accumulated)) {
+                  const firstSentence = getFirstSentence(accumulated)
+                  onFirstSentence(firstSentence)
+                  firstSentenceFired = true
+                }
+              }
+            }
+          } catch {
+            // Skip malformed chunks
+          }
+        }
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          // Return both accumulated text and function call
+          resolve(JSON.stringify({ text: accumulated, functionCall }))
+        } else {
+          reject(new Error(`OpenAI API error: ${xhr.status} - ${xhr.responseText}`))
+        }
+      }
+
+      xhr.onerror = () => reject(new Error('Network error'))
+
+      xhr.send(
+        JSON.stringify({
+          model: 'gpt-3.5-turbo', // Faster model for lower latency
+          messages,
+          functions: allTools,
+          function_call: 'auto',
+          max_tokens: 500,
+          temperature: 0.7,
+          stream: true,
+        })
+      )
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
-    }
-
-    const result = await response.json()
-    const choice = result.choices[0]
+    // Parse result
+    const result = JSON.parse(fullText)
+    const accumulated = result.text
+    const functionCall = result.functionCall
 
     // Check if LLM wants to call a function
-    if (choice.message.function_call) {
-      const functionCall = choice.message.function_call
+    if (functionCall && functionCall.name) {
       const functionName = functionCall.name
       const functionArgs = JSON.parse(functionCall.arguments)
 
@@ -162,7 +255,7 @@ export async function processMessageWithLLM(
         locale: context.language === 'es' ? 'es-ES' : 'en-US',
       })
 
-      // Call LLM again with function result
+      // Call LLM again with function result (also with streaming)
       const messagesWithToolResult = [
         ...messages,
         {
@@ -177,31 +270,63 @@ export async function processMessageWithLLM(
         },
       ]
 
-      response = await fetch(`${OPENAI_API_BASE}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: messagesWithToolResult,
-          max_tokens: 500,
-          temperature: 0.7,
-        }),
+      // Second XMLHttpRequest for function result response
+      const finalText = await new Promise<string>((resolve, reject) => {
+        const xhr2 = new XMLHttpRequest()
+
+        let buffer2 = ''
+        let accumulated2 = ''
+
+        xhr2.open('POST', `${OPENAI_API_BASE}/chat/completions`)
+        xhr2.setRequestHeader('Content-Type', 'application/json')
+        xhr2.setRequestHeader('Authorization', `Bearer ${OPENAI_API_KEY}`)
+
+        xhr2.onprogress = () => {
+          const newData = xhr2.responseText.slice(buffer2.length)
+          buffer2 = xhr2.responseText
+
+          const lines = newData.split('\n')
+          for (const line of lines) {
+            if (line.trim() === '' || line.trim() === 'data: [DONE]') continue
+            if (!line.startsWith('data: ')) continue
+
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.choices[0].delta.content) {
+                accumulated2 += data.choices[0].delta.content
+              }
+            } catch {
+              // Skip malformed chunks
+            }
+          }
+        }
+
+        xhr2.onload = () => {
+          if (xhr2.status >= 200 && xhr2.status < 300) {
+            resolve(accumulated2)
+          } else {
+            reject(new Error(`OpenAI API error: ${xhr2.status}`))
+          }
+        }
+
+        xhr2.onerror = () => reject(new Error('Network error'))
+
+        xhr2.send(
+          JSON.stringify({
+            model: 'gpt-3.5-turbo', // Faster model for lower latency
+            messages: messagesWithToolResult,
+            max_tokens: 500,
+            temperature: 0.7,
+            stream: true,
+          })
+        )
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`)
-      }
-
-      const finalResult = await response.json()
-      return finalResult.choices[0].message.content
+      return finalText
     }
 
-    // No function call, return direct response
-    return choice.message.content
+    // No function call, return streamed response
+    return accumulated
   } catch (error) {
     console.error('[RealtimeAgent] LLM processing error:', error)
     throw new Error(
@@ -301,6 +426,68 @@ export class RealtimeAgent {
   }
 
   /**
+   * Stop recording and get audio file (for optimistic UI flow)
+   *
+   * @returns Promise<string> - URI of recorded audio file
+   */
+  async stopRecordingAndGetAudio(): Promise<string> {
+    if (!this.recording || !this.isRecording) {
+      throw new Error('No active recording')
+    }
+
+    try {
+      const audioUri = await stopRecording(this.recording)
+      this.isRecording = false
+      this.recording = null
+      return audioUri
+    } catch (error) {
+      console.error('[RealtimeAgent] Error stopping recording:', error)
+      this.isRecording = false
+      this.recording = null
+      throw error
+    }
+  }
+
+  /**
+   * Transcribe audio (public method for optimistic UI)
+   */
+  async transcribeAudio(audioUri: string, language: string, prompt?: string): Promise<string> {
+    return transcribeAudio(audioUri, language, prompt)
+  }
+
+  /**
+   * Process with LLM (public method for optimistic UI)
+   */
+  async processWithLLM(
+    text: string,
+    history: Message[],
+    context: {
+      managerName: string
+      userName: string
+      language: string
+      userId?: string
+      authToken?: string
+    },
+    onFirstSentence?: (sentence: string) => void
+  ): Promise<string> {
+    return processMessageWithLLM(text, history, context, onFirstSentence)
+  }
+
+  /**
+   * Generate TTS (public method for optimistic UI)
+   */
+  async textToSpeech(text: string, language: string): Promise<string> {
+    return textToSpeech(text, language)
+  }
+
+  /**
+   * Cleanup audio file (wrapper for deleteAudioFile)
+   */
+  async cleanupAudioFile(uri: string): Promise<void> {
+    return deleteAudioFile(uri)
+  }
+
+  /**
    * Stop recording and process voice message
    *
    * Complete flow:
@@ -347,11 +534,11 @@ export class RealtimeAgent {
       // 3. Process with LLM (may include function calling)
       const responseText = await processMessageWithLLM(transcribedText, history, context)
 
-      // 4. Convert response to speech
-      const responseAudioUri = await textToSpeech(responseText, context.language)
-
-      // 5. Clean up input audio file
-      await deleteAudioFile(audioUri)
+      // 4. Convert response to speech AND cleanup in parallel (no need to block on cleanup)
+      const [responseAudioUri] = await Promise.all([
+        textToSpeech(responseText, context.language),
+        deleteAudioFile(audioUri), // Cleanup in background
+      ])
 
       return {
         transcribedText,

@@ -198,44 +198,114 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
     try {
       const context = getContext()
 
-      // Stop recording and process
-      const result = await realtimeAgent.stopListeningAndProcess(messages, context)
+      // Stop recording and get transcription first (optimistic UI)
+      const audioUri = await realtimeAgent.stopRecordingAndGetAudio()
 
-      // In conversational mode: DON'T add messages to chat
-      // In chat mode: ADD messages to chat
-      if (!isInConversationalMode) {
-        const userMessage: Message = {
-          id: `user-${Date.now()}`,
-          role: 'user',
-          content: result.transcribedText,
-          timestamp: new Date(),
-        }
-        setMessages(prev => [...prev, userMessage])
+      // Transcribe immediately and show to user
+      // Pass last message as context for better accuracy
+      const previousMessage = messages.length > 0 ? messages[messages.length - 1].content : ''
+      const transcribePromise = realtimeAgent.transcribeAudio(
+        audioUri,
+        context.language === 'es' ? 'es' : 'en',
+        previousMessage
+      )
 
-        const assistantMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: result.responseText,
-          timestamp: new Date(),
-        }
-        setMessages(prev => [...prev, assistantMessage])
+      // Show transcription as soon as available (don't wait for LLM)
+      const transcribedText = await transcribePromise
+
+      // Add user message to history (for both modes - needed for context in next turn)
+      const userMessage: Message = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: transcribedText,
+        timestamp: new Date(),
       }
+      setMessages(prev => [...prev, userMessage])
+
+      // Cleanup audio in background (don't block on this)
+      realtimeAgent.cleanupAudioFile(audioUri).catch(console.error)
+
+      // Track early TTS
+      let firstSentenceTTS: Promise<string> | null = null
+      let firstSentenceText = ''
+
+      // Process with LLM with early TTS callback
+      const responseText = await realtimeAgent.processWithLLM(
+        transcribedText,
+        messages,
+        context,
+        firstSentence => {
+          // First complete sentence is ready - start TTS immediately!
+          firstSentenceText = firstSentence
+          firstSentenceTTS = realtimeAgent.textToSpeech(firstSentence, context.language)
+        }
+      )
+
+      // Generate TTS
+      let responseAudioUri: string
+
+      if (firstSentenceTTS && firstSentenceText) {
+        // We started early TTS - check if we need TTS for rest of text
+        const remainingText = responseText.substring(firstSentenceText.length).trim()
+
+        if (remainingText.length > 10) {
+          // There's more text - generate second audio chunk
+          const [audio1, audio2] = await Promise.all([
+            firstSentenceTTS,
+            realtimeAgent.textToSpeech(remainingText, context.language),
+          ])
+
+          // Store both audios for sequential playback
+          responseAudioUri = JSON.stringify({ audio1, audio2, queue: true })
+        } else {
+          // Only one sentence - use early TTS
+          responseAudioUri = await firstSentenceTTS
+        }
+      } else {
+        // No early TTS (shouldn't happen but defensive)
+        responseAudioUri = await realtimeAgent.textToSpeech(responseText, context.language)
+      }
+
+      // Add assistant response to history (for both modes - needed for context)
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: responseText,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, assistantMessage])
+
+      const result = { transcribedText, responseText, responseAudioUri }
 
       // Play response audio (waits until audio finishes)
       setState(prev => ({ ...prev, isProcessing: false, isSpeaking: true }))
 
-      // WAIT for audio to finish playing before continuing
-      await realtimeAgent.playResponse(result.responseAudioUri)
+      // Check if we have audio queue (multiple chunks from early TTS)
+      try {
+        const queueData = JSON.parse(result.responseAudioUri)
+        if (queueData.queue && queueData.audio1 && queueData.audio2) {
+          // Play first audio chunk
+          await realtimeAgent.playResponse(queueData.audio1)
+          // Play second audio chunk seamlessly
+          await realtimeAgent.playResponse(queueData.audio2)
+        } else {
+          // Single audio
+          await realtimeAgent.playResponse(result.responseAudioUri)
+        }
+      } catch {
+        // Not JSON, single audio URI
+        await realtimeAgent.playResponse(result.responseAudioUri)
+      }
 
       // Audio finished playing, update state
       setState(prev => ({ ...prev, isSpeaking: false }))
 
       // Auto-listen again if in conversational mode
       if (isInConversationalMode) {
-        // Small delay before starting to listen again
+        // Small delay before starting to listen again (100ms for audio system cleanup)
         setTimeout(() => {
           startListening()
-        }, 300)
+        }, 100)
       }
     } catch (error) {
       console.error('[AssistantContext] Error processing voice:', error)

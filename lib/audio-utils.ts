@@ -26,18 +26,18 @@ const RECORDING_OPTIONS: Audio.RecordingOptions = {
   android: {
     extension: '.m4a',
     outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-    audioEncoder: Audio.AndroidAudioEncoder.AAC,
-    sampleRate: 44100,
+    audioEncoder: Audio.AndroidAudioEncoder.AAC_ELD, // Enhanced Low Delay
+    sampleRate: 44100, // Standard rate (16000 causes recording errors)
     numberOfChannels: 1,
-    bitRate: 128000,
+    bitRate: 64000, // Reduced for faster upload
   },
   ios: {
     extension: '.m4a',
     outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-    audioQuality: Audio.IOSAudioQuality.HIGH,
-    sampleRate: 44100,
+    audioQuality: Audio.IOSAudioQuality.MEDIUM,
+    sampleRate: 44100, // Standard rate (16000 causes recording errors)
     numberOfChannels: 1,
-    bitRate: 128000,
+    bitRate: 64000, // Reduced for faster upload
   },
   web: {
     mimeType: 'audio/mp4',

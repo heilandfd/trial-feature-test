@@ -207,6 +207,10 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
 
     const isInConversationalMode = state.isConversationalMode
 
+    // t0: User taps stop
+    const t0 = Date.now()
+    console.log('[Metrics] t0: User stopped speaking')
+
     setState(prev => ({ ...prev, isListening: false, isProcessing: true }))
 
     try {
@@ -214,6 +218,10 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
 
       // Stop recording and get transcription first (optimistic UI)
       const audioUri = await realtimeAgent.stopRecordingAndGetAudio()
+
+      // t1: Audio file ready to upload
+      const t1 = Date.now()
+      console.log('[Metrics] t1: Audio file ready (t1-t0):', t1 - t0, 'ms')
 
       // Transcribe immediately and show to user
       // Pass last message as context for better accuracy
@@ -226,6 +234,10 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
 
       // Show transcription as soon as available (don't wait for LLM)
       const transcribedText = await transcribePromise
+
+      // t2: Whisper transcription complete
+      const t2 = Date.now()
+      console.log('[Metrics] t2: Whisper complete (t2-t1):', t2 - t1, 'ms (STT latency)')
 
       // Add user message to history (for both modes - needed for context in next turn)
       const userMessage: Message = {
@@ -242,6 +254,8 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
       // Track early TTS
       let firstSentenceTTS: Promise<string> | null = null
       let firstSentenceText = ''
+      let t3 = 0 // Track when GPT starts responding
+      let t4 = 0 // Track when TTS completes
 
       // Process with LLM with early TTS callback
       const responseText = await realtimeAgent.processWithLLM(
@@ -249,11 +263,23 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
         messages,
         context,
         firstSentence => {
+          // t3: First token from GPT (first sentence ready)
+          if (!t3) {
+            t3 = Date.now()
+            console.log('[Metrics] t3: First GPT token (t3-t2):', t3 - t2, 'ms (LLM latency)')
+          }
+
           // First complete sentence is ready - start TTS immediately!
           firstSentenceText = firstSentence
           firstSentenceTTS = realtimeAgent.textToSpeech(firstSentence, context.language)
         }
       )
+
+      // If no early TTS callback fired, mark t3 now
+      if (!t3) {
+        t3 = Date.now()
+        console.log('[Metrics] t3: GPT complete (t3-t2):', t3 - t2, 'ms (LLM latency)')
+      }
 
       // Generate TTS
       let responseAudioUri: string
@@ -269,15 +295,27 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
             realtimeAgent.textToSpeech(remainingText, context.language),
           ])
 
+          // t4: TTS complete
+          t4 = Date.now()
+          console.log('[Metrics] t4: TTS complete (t4-t3):', t4 - t3, 'ms (TTS latency)')
+
           // Store both audios for sequential playback
           responseAudioUri = JSON.stringify({ audio1, audio2, queue: true })
         } else {
           // Only one sentence - use early TTS
           responseAudioUri = await firstSentenceTTS
+
+          // t4: TTS complete
+          t4 = Date.now()
+          console.log('[Metrics] t4: TTS complete (t4-t3):', t4 - t3, 'ms (TTS latency)')
         }
       } else {
         // No early TTS (shouldn't happen but defensive)
         responseAudioUri = await realtimeAgent.textToSpeech(responseText, context.language)
+
+        // t4: TTS complete
+        t4 = Date.now()
+        console.log('[Metrics] ⏱️ t4: TTS complete (t4-t3):', t4 - t3, 'ms (TTS latency)')
       }
 
       // Add assistant response to history (for both modes - needed for context)
@@ -293,6 +331,17 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
 
       // Play response audio (waits until audio finishes)
       setState(prev => ({ ...prev, isProcessing: false, isSpeaking: true }))
+
+      // t5: Audio playback starts
+      const t5 = Date.now()
+      console.log('[Metrics] t5: Audio playback starts (t5-t4):', t5 - t4, 'ms (Playback prep)')
+      console.log('[Metrics] TOTAL LATENCY (t5-t0):', t5 - t0, 'ms')
+      console.log('[Metrics] Breakdown:')
+      console.log('[Metrics]   - File ready: ', t1 - t0, 'ms')
+      console.log('[Metrics]   - Whisper STT:', t2 - t1, 'ms')
+      console.log('[Metrics]   - GPT LLM:    ', t3 - t2, 'ms')
+      console.log('[Metrics]   - TTS gen:    ', t4 - t3, 'ms')
+      console.log('[Metrics]   - Play prep:  ', t5 - t4, 'ms')
 
       // Check if we have audio queue (multiple chunks from early TTS)
       try {

@@ -26,18 +26,21 @@ const RECORDING_OPTIONS: Audio.RecordingOptions = {
   android: {
     extension: '.m4a',
     outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-    audioEncoder: Audio.AndroidAudioEncoder.AAC,
-    sampleRate: 44100,
+    audioEncoder: Audio.AndroidAudioEncoder.AAC_ELD, // ELD has lowest delay in AAC family
+    sampleRate: 24000, // Optimized for speech
     numberOfChannels: 1,
-    bitRate: 128000,
+    bitRate: 48000, // 48 kbps for voice
   },
   ios: {
-    extension: '.m4a',
-    outputFormat: Audio.IOSOutputFormat.MPEG4AAC,
-    audioQuality: Audio.IOSAudioQuality.HIGH,
-    sampleRate: 44100,
+    extension: '.wav',
+    outputFormat: Audio.IOSOutputFormat.LINEARPCM, // PCM = no encoder delay!
+    audioQuality: Audio.IOSAudioQuality.HIGH, // Required but not used for PCM
+    sampleRate: 24000, // Optimized for speech
     numberOfChannels: 1,
-    bitRate: 128000,
+    bitRate: 384000, // Required but not used for PCM (24000 * 16-bit)
+    linearPCMBitDepth: 16, // 16-bit PCM
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
   },
   web: {
     mimeType: 'audio/mp4',
@@ -106,13 +109,7 @@ export async function checkMicrophonePermission(): Promise<boolean> {
  */
 export async function startRecording(): Promise<Audio.Recording> {
   try {
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      playThroughEarpieceAndroid: false,
-      staysActiveInBackground: false,
-    })
-
+    // Audio mode already configured at app launch - no need to set here
     const recording = new Audio.Recording()
     await recording.prepareToRecordAsync(RECORDING_OPTIONS)
     await recording.startAsync()
@@ -148,11 +145,7 @@ export async function stopRecording(recording: Audio.Recording): Promise<string>
       throw new Error('No URI returned from recording')
     }
 
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-    })
-
+    // No need to change audio mode - already configured
     return uri
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : ''
@@ -207,13 +200,7 @@ export async function deleteAudioFile(uri: string): Promise<void> {
  */
 export async function playAudio(uri: string): Promise<Audio.Sound> {
   try {
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
-      playThroughEarpieceAndroid: false,
-      staysActiveInBackground: false,
-    })
-
+    // Audio mode already configured - just create and play
     const { sound } = await Audio.Sound.createAsync(
       { uri },
       { shouldPlay: true },

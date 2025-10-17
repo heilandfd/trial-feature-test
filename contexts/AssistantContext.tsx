@@ -50,8 +50,22 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
     isConversationalMode: false,
   })
 
-  // Cleanup on unmount
+  // Initialize audio system once on mount
   useEffect(() => {
+    const initAudio = async () => {
+      const { Audio } = await import('expo-av')
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
+        interruptionModeAndroid: 1, // Do not mix
+        shouldDuckAndroid: true,
+      })
+    }
+
+    initAudio().catch(console.error)
+
     return () => {
       realtimeAgent.cleanup()
     }
@@ -193,49 +207,168 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
 
     const isInConversationalMode = state.isConversationalMode
 
+    // t0: User taps stop
+    const t0 = Date.now()
+    console.log('[Metrics] t0: User stopped speaking')
+
     setState(prev => ({ ...prev, isListening: false, isProcessing: true }))
 
     try {
       const context = getContext()
 
-      // Stop recording and process
-      const result = await realtimeAgent.stopListeningAndProcess(messages, context)
+      // Stop recording and get transcription first (optimistic UI)
+      const audioUri = await realtimeAgent.stopRecordingAndGetAudio()
 
-      // In conversational mode: DON'T add messages to chat
-      // In chat mode: ADD messages to chat
-      if (!isInConversationalMode) {
-        const userMessage: Message = {
-          id: `user-${Date.now()}`,
-          role: 'user',
-          content: result.transcribedText,
-          timestamp: new Date(),
-        }
-        setMessages(prev => [...prev, userMessage])
+      // t1: Audio file ready to upload
+      const t1 = Date.now()
+      console.log('[Metrics] t1: Audio file ready (t1-t0):', t1 - t0, 'ms')
 
-        const assistantMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: result.responseText,
-          timestamp: new Date(),
-        }
-        setMessages(prev => [...prev, assistantMessage])
+      // Transcribe immediately and show to user
+      // Pass last message as context for better accuracy
+      const previousMessage = messages.length > 0 ? messages[messages.length - 1].content : ''
+      const transcribePromise = realtimeAgent.transcribeAudio(
+        audioUri,
+        context.language === 'es' ? 'es' : 'en',
+        previousMessage
+      )
+
+      // Show transcription as soon as available (don't wait for LLM)
+      const transcribedText = await transcribePromise
+
+      // t2: Whisper transcription complete
+      const t2 = Date.now()
+      console.log('[Metrics] t2: Whisper complete (t2-t1):', t2 - t1, 'ms (STT latency)')
+
+      // Add user message to history (for both modes - needed for context in next turn)
+      const userMessage: Message = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: transcribedText,
+        timestamp: new Date(),
       }
+      setMessages(prev => [...prev, userMessage])
+
+      // Cleanup audio in background (don't block on this)
+      realtimeAgent.cleanupAudioFile(audioUri).catch(console.error)
+
+      // Track early TTS
+      let firstSentenceTTS: Promise<string> | null = null
+      let firstSentenceText = ''
+      let t3 = 0 // Track when GPT starts responding
+      let t4 = 0 // Track when TTS completes
+
+      // Process with LLM with early TTS callback
+      const responseText = await realtimeAgent.processWithLLM(
+        transcribedText,
+        messages,
+        context,
+        firstSentence => {
+          // t3: First token from GPT (first sentence ready)
+          if (!t3) {
+            t3 = Date.now()
+            console.log('[Metrics] t3: First GPT token (t3-t2):', t3 - t2, 'ms (LLM latency)')
+          }
+
+          // First complete sentence is ready - start TTS immediately!
+          firstSentenceText = firstSentence
+          firstSentenceTTS = realtimeAgent.textToSpeech(firstSentence, context.language)
+        }
+      )
+
+      // If no early TTS callback fired, mark t3 now
+      if (!t3) {
+        t3 = Date.now()
+        console.log('[Metrics] t3: GPT complete (t3-t2):', t3 - t2, 'ms (LLM latency)')
+      }
+
+      // Generate TTS
+      let responseAudioUri: string
+
+      if (firstSentenceTTS && firstSentenceText) {
+        // We started early TTS - check if we need TTS for rest of text
+        const remainingText = responseText.substring(firstSentenceText.length).trim()
+
+        if (remainingText.length > 10) {
+          // There's more text - generate second audio chunk
+          const [audio1, audio2] = await Promise.all([
+            firstSentenceTTS,
+            realtimeAgent.textToSpeech(remainingText, context.language),
+          ])
+
+          // t4: TTS complete
+          t4 = Date.now()
+          console.log('[Metrics] t4: TTS complete (t4-t3):', t4 - t3, 'ms (TTS latency)')
+
+          // Store both audios for sequential playback
+          responseAudioUri = JSON.stringify({ audio1, audio2, queue: true })
+        } else {
+          // Only one sentence - use early TTS
+          responseAudioUri = await firstSentenceTTS
+
+          // t4: TTS complete
+          t4 = Date.now()
+          console.log('[Metrics] t4: TTS complete (t4-t3):', t4 - t3, 'ms (TTS latency)')
+        }
+      } else {
+        // No early TTS (shouldn't happen but defensive)
+        responseAudioUri = await realtimeAgent.textToSpeech(responseText, context.language)
+
+        // t4: TTS complete
+        t4 = Date.now()
+        console.log('[Metrics] ⏱️ t4: TTS complete (t4-t3):', t4 - t3, 'ms (TTS latency)')
+      }
+
+      // Add assistant response to history (for both modes - needed for context)
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: responseText,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, assistantMessage])
+
+      const result = { transcribedText, responseText, responseAudioUri }
 
       // Play response audio (waits until audio finishes)
       setState(prev => ({ ...prev, isProcessing: false, isSpeaking: true }))
 
-      // WAIT for audio to finish playing before continuing
-      await realtimeAgent.playResponse(result.responseAudioUri)
+      // t5: Audio playback starts
+      const t5 = Date.now()
+      console.log('[Metrics] t5: Audio playback starts (t5-t4):', t5 - t4, 'ms (Playback prep)')
+      console.log('[Metrics] TOTAL LATENCY (t5-t0):', t5 - t0, 'ms')
+      console.log('[Metrics] Breakdown:')
+      console.log('[Metrics]   - File ready: ', t1 - t0, 'ms')
+      console.log('[Metrics]   - Whisper STT:', t2 - t1, 'ms')
+      console.log('[Metrics]   - GPT LLM:    ', t3 - t2, 'ms')
+      console.log('[Metrics]   - TTS gen:    ', t4 - t3, 'ms')
+      console.log('[Metrics]   - Play prep:  ', t5 - t4, 'ms')
+
+      // Check if we have audio queue (multiple chunks from early TTS)
+      try {
+        const queueData = JSON.parse(result.responseAudioUri)
+        if (queueData.queue && queueData.audio1 && queueData.audio2) {
+          // Play first audio chunk
+          await realtimeAgent.playResponse(queueData.audio1)
+          // Play second audio chunk seamlessly
+          await realtimeAgent.playResponse(queueData.audio2)
+        } else {
+          // Single audio
+          await realtimeAgent.playResponse(result.responseAudioUri)
+        }
+      } catch {
+        // Not JSON, single audio URI
+        await realtimeAgent.playResponse(result.responseAudioUri)
+      }
 
       // Audio finished playing, update state
       setState(prev => ({ ...prev, isSpeaking: false }))
 
       // Auto-listen again if in conversational mode
       if (isInConversationalMode) {
-        // Small delay before starting to listen again
+        // Small delay before starting to listen again (100ms for audio system cleanup)
         setTimeout(() => {
           startListening()
-        }, 300)
+        }, 100)
       }
     } catch (error) {
       console.error('[AssistantContext] Error processing voice:', error)

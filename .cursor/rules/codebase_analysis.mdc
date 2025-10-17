@@ -1,0 +1,183 @@
+---
+description: Full analysis of the Ato Mobile App codebase. Serves as reference for architecture, technologies, conventions, and current gaps.
+globs:
+alwaysApply: true
+---
+
+# Ato Mobile App - Codebase Analysis (from Cursor)
+
+## Executive Summary
+
+**Ato** is a React Native mobile app built with Expo (managed workflow) for elderly care management. The app allows "ato-managers" (family members/caregivers) to monitor and manage profiles of "ato-users" (seniors), including contacts, reminders, and activity tracking. The codebase follows modern React Native best practices with TypeScript, functional components, and context-based state management.
+
+---
+
+## 1. Technology Stack
+
+* **Core Framework**: Expo SDK `~53.0.23`, React `19.0.0`, React Native `0.79.5`, TypeScript `~5.8.3`
+* **Navigation**: Expo Router `~5.1.7`, typed routes, deep linking (`atoapp://`)
+* **Backend & Auth**: Supabase (`^2.50.3`), magic link authentication, JWT token auth, AsyncStorage for session persistence
+* **State Management**: React Context API (AuthContext, AtoContext)
+* **Internationalization**: i18n-js + expo-localization (Spanish + English)
+* **Styling**: React Native StyleSheet, expo-linear-gradient, light/dark theme, custom Themed components
+* **UI/UX**: vector icons, reanimated, gesture-handler, safe-area-context, expo-haptics
+* **Dev Tools**: ESLint, Prettier, Husky, lint-staged, TypeScript strict
+
+---
+
+## 2. Project Architecture
+
+```
+trial-feature-test/
+├── app/            # Expo Router screens
+├── components/     # Reusable components
+├── contexts/       # React Contexts
+├── lib/            # Core utilities (supabase, api, i18n)
+├── hooks/          # Custom hooks
+├── constants/      # Constants (Colors.ts)
+├── types/          # Type definitions
+└── assets/         # Static assets
+```
+
+**Provider hierarchy**:
+
+```tsx
+<I18nProvider>
+  <AuthProvider>
+    <AtoProvider>
+      <AuthGuard>
+        <ThemeProvider>
+          {/* App Content */}
+        </ThemeProvider>
+      </AuthGuard>
+    </AtoProvider>
+  </AuthProvider>
+</I18nProvider>
+```
+
+Navigation: file-system based routing with Expo Router, custom bottom navigation.
+
+---
+
+## 3. State Management
+
+* **AuthProvider**: manages Supabase auth state, mock session for testing, deep links, session persistence.
+* **AtoContext**: manager/user state, user reports (mocked), greetings.
+* **I18nProvider**: handles language state, persistence, and translations.
+
+---
+
+## 4. API Layer
+
+* Supabase client in `lib/supabase.ts`
+* Ato API in `lib/ato-api.ts` with `getManagerById`, `getUserReport`
+* Auth via Bearer tokens, error handling
+* Types defined for Manager and UserReport
+
+---
+
+## 5. Internationalization
+
+* `i18n-js` + expo-localization
+* Spanish (default) + English supported
+* Helpers for formatting dates/times, relative dates
+
+---
+
+## 6. Navigation & Routing
+
+* Expo Router with typed routes
+* Deep linking with scheme `atoapp://`
+* AuthGuard redirects unauthenticated users, protects routes
+* Custom `BottomNavigation` component
+
+---
+
+## 7. Styling & Theming
+
+* Colors defined in `constants/Colors.ts`
+* Themed components (`ThemedText`, `ThemedView`)
+* Flexbox layout, gradients, shadows
+* Safe areas handled via `react-native-safe-area-context`
+
+---
+
+## 8. Authentication
+
+* Email OTP + magic link via Supabase
+* Deep link to `/auth/callback`
+* Session persisted in AsyncStorage
+* Test mode: `gaspi+store-testing@ato.ar` / `181302`
+
+---
+
+## 9. Components Overview
+
+Key reusable components: `AuthProvider`, `AuthGuard`, `I18nProvider`, `ThemedText`, `BottomNavigation`, `ErrorBoundary`, `DashboardHeader`, `RemindersSection`, `UserStatusSection`, etc.
+
+---
+
+## 10. Coding Conventions
+
+* Strict TypeScript, prefer interfaces, no enums
+* Functional components only
+* Naming conventions: `is/has/should` for booleans, `handle` prefix for handlers
+* File naming: PascalCase for components, camelCase for utils
+
+---
+
+## 11. Code Quality & Tooling
+
+* ESLint + Prettier with pre-commit hooks
+* TypeScript type checking
+* Scripts: `npm start`, `npm run android/ios/web`, `npm run lint`, `npm run typecheck`
+
+---
+
+## 12. Current Gaps & TODOs
+
+* Duplicate AuthContext file (unused)
+* AtoContext uses mock data for reports and users
+* Missing AtoUser type
+* No `.env.example`
+* Docs reference tools (OpenAI, Vercel AI SDK, Zustand, React Query) not in `package.json`
+* Missing test setup (Jest, RTL, Detox)
+* Missing error reporting (Sentry) and push notifications
+* Tokens stored in AsyncStorage (recommend secure store)
+
+---
+
+## 13. Data Flow Example
+
+**Login → Dashboard**:
+
+1. Email login via Supabase → OTP verification
+2. AuthProvider sets session → AuthGuard redirects
+3. Dashboard initializes manager and user data
+4. AtoContext refreshes user report every 5 minutes (mock)
+
+---
+
+## 14. Deployment & Build
+
+* Expo Application Services (EAS) used for builds and OTA updates
+* Config in `app.json`: newArchEnabled, dark mode, portrait, deep linking
+
+---
+
+## 15. Recommendations for Trial Feature
+
+* Place new components in `/components/assistant/`
+* Add `AssistantContext` for state
+* Reuse API service pattern in `lib/`
+* Follow StyleSheet + Colors.ts conventions
+* Use Supabase session access token from AuthProvider
+* Add i18n keys in `/lib/i18n/locales/`
+* Integrate assistant trigger in Dashboard or BottomNavigation
+* Suggested file structure: `AssistantBottomSheet.tsx`, `AssistantInput.tsx`, `AssistantMessages.tsx`, `AssistantVoiceButton.tsx`, `lib/intent-router.ts`, `lib/stt-service.ts`, `lib/tts-service.ts`, `types/assistant.ts`
+
+---
+
+## Summary
+
+The codebase is clean, modern, and production-ready with strong TypeScript usage, clear separation of concerns, and good developer tooling. It is missing some testing and error reporting infrastructure but is well-prepared for new features. Following the existing patterns will allow the Trial Feature to blend in seamlessly.

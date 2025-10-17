@@ -53,11 +53,14 @@ export async function transcribeAudio(
   prompt?: string
 ): Promise<string> {
   try {
+    // Detect format from URI (.wav for iOS PCM, .m4a for Android AAC)
+    const isWav = audioUri.endsWith('.wav')
+
     const formData = new FormData()
     formData.append('file', {
       uri: audioUri,
-      type: 'audio/m4a',
-      name: 'audio.m4a',
+      type: isWav ? 'audio/wav' : 'audio/m4a',
+      name: isWav ? 'audio.wav' : 'audio.m4a',
     } as any)
     formData.append('model', 'whisper-1')
     formData.append('language', language)

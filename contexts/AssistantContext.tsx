@@ -50,8 +50,22 @@ export const AssistantProvider: React.FC<AssistantProviderProps> = ({ children }
     isConversationalMode: false,
   })
 
-  // Cleanup on unmount
+  // Initialize audio system once on mount
   useEffect(() => {
+    const initAudio = async () => {
+      const { Audio } = await import('expo-av')
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: false,
+        interruptionModeAndroid: 1, // Do not mix
+        shouldDuckAndroid: true,
+      })
+    }
+
+    initAudio().catch(console.error)
+
     return () => {
       realtimeAgent.cleanup()
     }

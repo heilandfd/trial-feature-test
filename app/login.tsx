@@ -22,6 +22,13 @@ import { useI18n } from '../components/I18nProvider'
 import ErrorModal from '../components/ErrorModal'
 import ContactPopup from '../components/ContactPopup'
 import { DevConfig } from '../lib/dev-config'
+import { Colors } from '../constants/Colors'
+
+// Login-specific colors
+const LOGIN_COLORS = {
+  ctaOrange: '#FF6D00', // CTA button color (specific to login)
+  lightBlue: '#F0F9FF', // Light blue for text/borders
+} as const
 
 export default function LoginScreen() {
   const router = useRouter()
@@ -196,7 +203,7 @@ export default function LoginScreen() {
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <AtoLogo width={200} height={92} color="#FFFFFF" />
+            <AtoLogo width={200} height={92} color={Colors.light.onPrimary} />
           </View>
 
           {/* Form */}
@@ -213,7 +220,7 @@ export default function LoginScreen() {
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={Colors.light.onSurfaceLight}
                     textContentType="emailAddress"
                   />
                 </View>
@@ -224,13 +231,13 @@ export default function LoginScreen() {
                   disabled={loading}
                 >
                   <LinearGradient
-                    colors={['#FF6D00', '#FF6D00']}
+                    colors={[LOGIN_COLORS.ctaOrange, LOGIN_COLORS.ctaOrange]}
                     style={styles.gradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   >
                     {loading ? (
-                      <ActivityIndicator color="#fff" size="small" />
+                      <ActivityIndicator color={Colors.light.onPrimary} size="small" />
                     ) : (
                       <Text style={styles.buttonText}>{t('auth.sendMagicLink')}</Text>
                     )}
@@ -259,14 +266,18 @@ export default function LoginScreen() {
                         maxLength={6}
                         autoComplete="one-time-code"
                         textContentType="oneTimeCode"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={Colors.light.onSurfaceLight}
                       />
                       <TouchableOpacity style={styles.pasteButton} onPress={handlePasteOtp}>
                         <Text style={styles.pasteButtonText}>{t('auth.paste')}</Text>
                       </TouchableOpacity>
                     </View>
                     {verifyingOtp && (
-                      <ActivityIndicator color="#00D4FF" size="small" style={styles.inputLoader} />
+                      <ActivityIndicator
+                        color={Colors.light.primaryDark}
+                        size="small"
+                        style={styles.inputLoader}
+                      />
                     )}
                   </View>
 
@@ -278,12 +289,14 @@ export default function LoginScreen() {
                       disabled={true}
                     >
                       <LinearGradient
-                        colors={['#D1D5DB', '#9CA3AF']}
+                        colors={[Colors.light.state.disabled, Colors.light.onSurfaceLight]}
                         style={styles.gradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                       >
-                        <Text style={[styles.buttonText, { color: '#6B7280' }]}>
+                        <Text
+                          style={[styles.buttonText, { color: Colors.light.onSurfaceSecondary }]}
+                        >
                           {6 - otp.length} {t('auth.digitsRemaining')}
                         </Text>
                       </LinearGradient>
@@ -296,12 +309,12 @@ export default function LoginScreen() {
                       disabled={true}
                     >
                       <LinearGradient
-                        colors={['#00D4FF', '#00A8E8']}
+                        colors={[Colors.light.primaryDark, Colors.light.primaryDark]}
                         style={styles.gradient}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                       >
-                        <ActivityIndicator color="#fff" size="small" />
+                        <ActivityIndicator color={Colors.light.onPrimary} size="small" />
                       </LinearGradient>
                     </TouchableOpacity>
                   )}
@@ -315,7 +328,7 @@ export default function LoginScreen() {
 
                 <TouchableOpacity style={styles.button} onPress={handleOpenEmail}>
                   <LinearGradient
-                    colors={['#FF6D00', '#FF6D00']}
+                    colors={[LOGIN_COLORS.ctaOrange, LOGIN_COLORS.ctaOrange]}
                     style={styles.gradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
@@ -361,7 +374,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#3CCEF5',
+    backgroundColor: Colors.light.primary,
   },
   content: {
     flex: 1,
@@ -383,7 +396,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     marginBottom: 24,
     textAlign: 'left',
   },
@@ -393,20 +406,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1.5,
-    borderColor: '#F0F9FF',
+    borderColor: LOGIN_COLORS.lightBlue,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#111827',
+    backgroundColor: Colors.light.surface,
+    color: Colors.light.onSurface,
     letterSpacing: 0,
-    shadowColor: '#000',
+    shadowColor: Colors.light.shadowDark,
     shadowOffset: {
       width: 0,
       height: 1,
@@ -420,7 +433,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 16,
     marginTop: 4,
-    shadowColor: '#00D4FF',
+    shadowColor: Colors.light.primaryDark,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -442,14 +455,14 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
   subtitle: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 8,
@@ -462,11 +475,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 15,
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
   },
   footerLink: {
     fontSize: 15,
-    color: '#FF6D00',
+    color: LOGIN_COLORS.ctaOrange,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
@@ -476,19 +489,19 @@ const styles = StyleSheet.create({
   },
   emailSentText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 24,
   },
   emailAddress: {
     fontSize: 20,
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     fontWeight: '700',
   },
   emailSentDescription: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -500,7 +513,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     fontWeight: '500',
   },
   otpContainer: {
@@ -509,7 +522,7 @@ const styles = StyleSheet.create({
   otpLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -524,18 +537,18 @@ const styles = StyleSheet.create({
   otpInput: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: '#F0F9FF',
+    borderColor: LOGIN_COLORS.lightBlue,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingRight: 80,
     fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#111827',
+    backgroundColor: Colors.light.surface,
+    color: Colors.light.onSurface,
     textAlign: 'left',
     letterSpacing: 6,
     fontWeight: '600',
-    shadowColor: '#000',
+    shadowColor: Colors.light.shadowDark,
     shadowOffset: {
       width: 0,
       height: 1,
@@ -547,20 +560,20 @@ const styles = StyleSheet.create({
   pasteButton: {
     position: 'absolute',
     right: 8,
-    backgroundColor: '#FF6D00',
+    backgroundColor: LOGIN_COLORS.ctaOrange,
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   pasteButtonText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     fontWeight: '500',
   },
   verifyButton: {
     borderRadius: 8,
     overflow: 'hidden',
-    shadowColor: '#00D4FF',
+    shadowColor: Colors.light.primaryDark,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -578,12 +591,12 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.light.outline,
   },
   orText: {
     marginHorizontal: 16,
     fontSize: 14,
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     fontWeight: '500',
     textAlign: 'center',
   },

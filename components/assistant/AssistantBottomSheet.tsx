@@ -15,6 +15,7 @@ import { useAssistant } from '../../contexts/AssistantContext'
 import { useI18n } from '../I18nProvider'
 import type { Message } from '../../types/assistant'
 import { AssistantTrigger } from './AssistantTrigger'
+import { Colors } from '../../constants/Colors'
 
 // Footer with internal state to prevent parent re-renders
 interface InputFooterProps {
@@ -49,7 +50,7 @@ const InputFooter = React.memo<InputFooterProps>(
         <BottomSheetTextInput
           style={styles.input}
           placeholder={placeholder}
-          placeholderTextColor={COLORS.text.light}
+          placeholderTextColor={Colors.light.onSurfaceLight}
           value={text}
           onChangeText={setText}
           onSubmitEditing={handleSend}
@@ -71,7 +72,9 @@ const InputFooter = React.memo<InputFooterProps>(
           <Ionicons
             name="send"
             size={20}
-            color={text.trim() && !isProcessing ? COLORS.white : COLORS.text.light}
+            color={
+              text.trim() && !isProcessing ? Colors.light.onPrimary : Colors.light.onSurfaceLight
+            }
           />
         </TouchableOpacity>
       </View>
@@ -87,34 +90,13 @@ const SCROLL_BOTTOM_PADDING = 100
 const AUTO_SCROLL_DELAY_MS = 100
 const INPUT_BAR_HEIGHT = 56
 
-// Colors - Following project color patterns
-const COLORS = {
-  primary: '#3CCEF5',
-  primaryDark: '#00D4FF',
-  userBubble: '#3B82F6',
-  assistantBubble: '#F3F4F6',
-  recording: '#EF4444',
-  white: '#FFFFFF',
-  text: {
-    primary: '#111827',
-    secondary: '#6B7280',
-    tertiary: '#374151',
-    light: '#9CA3AF',
-    userMessage: '#FFFFFF',
-    userTimestamp: '#DBEAFE',
-  },
-  border: {
-    light: '#F3F4F6',
-    input: '#E5E7EB',
-  },
-  background: {
-    input: '#F9FAFB',
-    disabled: '#F3F4F6',
-  },
-  indicator: '#E5E7EB',
-  icon: {
-    empty: '#D1D5DB',
-  },
+// Component-specific colors for chat UI
+const CHAT_COLORS = {
+  // Message bubble specific colors
+  userBubble: Colors.light.accent, // Blue for user messages
+  assistantBubble: Colors.light.surfaceTertiary, // Light gray for assistant
+  userTimestamp: '#DBEAFE', // Light blue for user message timestamps
+  recording: Colors.light.error, // Red for recording state
 } as const
 
 interface MessageBubbleProps {
@@ -233,7 +215,7 @@ export const AssistantBottomSheet: React.FC = () => {
       <BottomSheetFooter
         {...props}
         bottomInset={insets.bottom}
-        style={{ backgroundColor: COLORS.white }}
+        style={{ backgroundColor: Colors.light.surface }}
       >
         <InputFooter
           isProcessing={state.isProcessing}
@@ -302,7 +284,7 @@ export const AssistantBottomSheet: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.logoCircle}>
-            <Ionicons name="chatbubbles" size={20} color={COLORS.white} />
+            <Ionicons name="chatbubbles" size={20} color={Colors.light.onPrimary} />
           </View>
           <Text style={styles.headerTitle}>{t('assistant.emptyStateTitle')}</Text>
         </View>
@@ -313,7 +295,7 @@ export const AssistantBottomSheet: React.FC = () => {
           accessibilityRole="button"
           accessibilityHint={t('assistant.accessibility.closeButton')}
         >
-          <Ionicons name="close" size={24} color={COLORS.text.secondary} />
+          <Ionicons name="close" size={24} color={Colors.light.onSurfaceSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -394,12 +376,12 @@ export const AssistantBottomSheet: React.FC = () => {
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.light.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   handleIndicator: {
-    backgroundColor: COLORS.indicator,
+    backgroundColor: Colors.light.indicator,
     width: 40,
     height: 4,
   },
@@ -411,7 +393,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border.light,
+    borderBottomColor: Colors.light.outlineVariant,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -422,14 +404,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.primary,
+    backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.text.primary,
+    color: Colors.light.onSurface,
   },
   closeButton: {
     width: 32,
@@ -459,13 +441,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: COLORS.text.tertiary,
+    color: Colors.light.onSurfaceTertiary,
     marginTop: 16,
     marginBottom: 8,
   },
   lastMessagePreview: {
     fontSize: 14,
-    color: COLORS.text.secondary,
+    color: Colors.light.onSurfaceSecondary,
     marginTop: 8,
     marginHorizontal: 32,
     textAlign: 'center',
@@ -476,7 +458,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
-    color: COLORS.text.secondary,
+    color: Colors.light.onSurfaceSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -494,11 +476,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   userBubble: {
-    backgroundColor: COLORS.userBubble,
+    backgroundColor: CHAT_COLORS.userBubble,
     borderBottomRightRadius: 4,
   },
   assistantBubble: {
-    backgroundColor: COLORS.assistantBubble,
+    backgroundColor: CHAT_COLORS.assistantBubble,
     borderBottomLeftRadius: 4,
   },
   messageText: {
@@ -507,17 +489,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   userText: {
-    color: COLORS.text.userMessage,
+    color: Colors.light.onAccent,
   },
   assistantText: {
-    color: COLORS.text.primary,
+    color: Colors.light.onSurface,
   },
   timestamp: {
     fontSize: 11,
-    color: COLORS.text.secondary,
+    color: Colors.light.onSurfaceSecondary,
   },
   userTimestamp: {
-    color: COLORS.text.userTimestamp,
+    color: CHAT_COLORS.userTimestamp,
   },
   typingIndicator: {
     flexDirection: 'row',
@@ -525,7 +507,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: COLORS.assistantBubble,
+    backgroundColor: CHAT_COLORS.assistantBubble,
     borderRadius: 16,
     maxWidth: '80%',
     borderBottomLeftRadius: 4,
@@ -534,7 +516,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.text.light,
+    backgroundColor: Colors.light.onSurfaceLight,
   },
   typingDot2: {
     opacity: 0.7,
@@ -550,32 +532,32 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border.light,
-    backgroundColor: COLORS.white,
+    borderTopColor: Colors.light.outlineVariant,
+    backgroundColor: Colors.light.surface,
   },
   input: {
     flex: 1,
     minHeight: 40,
     maxHeight: 100,
-    backgroundColor: COLORS.background.input,
+    backgroundColor: Colors.light.surfaceVariant,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 10,
     fontSize: 15,
-    color: COLORS.text.primary,
+    color: Colors.light.onSurface,
     borderWidth: 1,
-    borderColor: COLORS.border.input,
+    borderColor: Colors.light.outline,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.userBubble,
+    backgroundColor: CHAT_COLORS.userBubble,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: COLORS.background.disabled,
+    backgroundColor: Colors.light.state.disabled,
   },
 })

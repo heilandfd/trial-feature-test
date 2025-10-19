@@ -11,6 +11,7 @@ import {
 import { BottomNavigation } from '../components/BottomNavigation'
 import { useAuth } from '../components/AuthProvider'
 import { useI18n } from '../components/I18nProvider'
+import { Colors } from '../constants/Colors'
 
 export default function SettingsScreen() {
   const { signOut } = useAuth()
@@ -99,7 +100,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.light.surfaceVariant,
   },
   safeArea: {
     flex: 1,
@@ -115,18 +116,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     textAlign: 'center',
     marginBottom: 40,
   },
   logoutButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: Colors.light.error,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   logoutButtonText: {
-    color: '#FFFFFF',
+    color: Colors.light.onError,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
     marginBottom: 16,
   },
   languageOptions: {
@@ -157,21 +158,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    borderColor: Colors.light.outline,
+    backgroundColor: Colors.light.surface,
     alignItems: 'center',
   },
   languageOptionActive: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EBF4FF',
+    borderColor: Colors.light.accent,
+    backgroundColor: Colors.light.state.activeBackground,
   },
   languageOptionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
   },
   languageOptionTextActive: {
-    color: '#3B82F6',
+    color: Colors.light.accent,
     fontWeight: '600',
   },
 })

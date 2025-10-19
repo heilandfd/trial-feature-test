@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAssistant } from '../contexts/AssistantContext'
 import { AssistantTrigger } from './assistant/AssistantTrigger'
+import { Colors } from '../constants/Colors'
 
 type IconName = keyof typeof Ionicons.glyphMap
 
@@ -29,14 +30,6 @@ const RIGHT_TABS: Tab[] = [
   { label: 'Ajustes', iconName: 'settings', route: '/settings' },
 ]
 
-const COLORS = {
-  active: '#3B82F6',
-  inactive: '#9CA3AF',
-  background: '#FFFFFF',
-  shadow: '#3CCEF5',
-  activeBackground: '#EBF4FF',
-} as const
-
 // Assistant trigger button configuration
 const ASSISTANT_BUTTON_SIZE = 72
 const ASSISTANT_BUTTON_GAP = 16 // Space reserved for the button (8px on each side)
@@ -44,7 +37,11 @@ const ASSISTANT_BUTTON_GAP = 16 // Space reserved for the button (8px on each si
 const TabItem: React.FC<TabItemProps> = ({ label, iconName, onPress, isActive }) => (
   <TouchableOpacity style={styles.tabItem} onPress={onPress} activeOpacity={0.7}>
     <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
-      <Ionicons name={iconName} size={22} color={isActive ? COLORS.active : COLORS.inactive} />
+      <Ionicons
+        name={iconName}
+        size={22}
+        color={isActive ? Colors.light.accent : Colors.light.iconLight}
+      />
     </View>
     <Text style={[styles.label, isActive && styles.labelActive]}>{label}</Text>
   </TouchableOpacity>
@@ -115,11 +112,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   navBar: {
-    backgroundColor: COLORS.background,
+    backgroundColor: Colors.light.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 12,
-    shadowColor: COLORS.shadow,
+    shadowColor: Colors.light.shadow,
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -159,15 +156,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   iconContainerActive: {
-    backgroundColor: COLORS.activeBackground,
+    backgroundColor: Colors.light.state.activeBackground,
   },
   label: {
     fontSize: 11,
-    color: COLORS.inactive,
+    color: Colors.light.iconLight,
     fontWeight: '500',
   },
   labelActive: {
-    color: COLORS.active,
+    color: Colors.light.accent,
     fontWeight: '600',
   },
 })

@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Linking, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useI18n } from './I18nProvider'
+import { Colors } from '../constants/Colors'
 
 interface ContactPopupProps {
   visible: boolean
@@ -64,17 +65,17 @@ export default function ContactPopup({ visible, onClose }: ContactPopupProps) {
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.contactButton} onPress={handleWhatsApp}>
-              <Ionicons name="logo-whatsapp" size={18} color="#3CCEF5" />
+              <Ionicons name="logo-whatsapp" size={18} color={Colors.light.primary} />
               <Text style={styles.buttonText}>WhatsApp</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.contactButton} onPress={handleSMS}>
-              <Ionicons name="chatbubble" size={18} color="#3CCEF5" />
+              <Ionicons name="chatbubble" size={18} color={Colors.light.primary} />
               <Text style={styles.buttonText}>SMS</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.contactButton} onPress={handleEmail}>
-              <Ionicons name="mail" size={18} color="#3CCEF5" />
+              <Ionicons name="mail" size={18} color={Colors.light.primary} />
               <Text style={styles.buttonText}>Email</Text>
             </TouchableOpacity>
           </View>
@@ -97,12 +98,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   popup: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
+    shadowColor: Colors.light.shadowDark,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: Colors.light.onSurface,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 24,
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 20,
@@ -132,9 +133,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   contactButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.surface,
     borderWidth: 2,
-    borderColor: '#3CCEF5',
+    borderColor: Colors.light.primary,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   buttonText: {
-    color: '#374151',
+    color: Colors.light.onSurfaceTertiary,
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.2,
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     fontWeight: '500',
   },
 })

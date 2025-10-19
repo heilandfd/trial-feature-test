@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { useAto } from '../contexts/AtoContext'
+import { Colors } from '../constants/Colors'
 
 export const UserStatusSection: React.FC = () => {
   const { selectedUser } = useAto()
@@ -44,7 +45,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.surface,
     borderRadius: 24,
     shadowColor: '#000',
     shadowOffset: {
@@ -62,13 +63,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useI18n } from './I18nProvider'
+import { Colors } from '../constants/Colors'
 
 interface ErrorModalProps {
   visible: boolean
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.surface,
     borderRadius: 16,
     marginHorizontal: 32,
     maxWidth: 340,
@@ -61,13 +62,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#DC2626',
+    color: Colors.light.error,
     marginBottom: 12,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: '#374151',
+    color: Colors.light.onSurfaceTertiary,
     lineHeight: 24,
     textAlign: 'center',
     marginBottom: 24,
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     fontSize: 16,
     fontWeight: '500',
   },

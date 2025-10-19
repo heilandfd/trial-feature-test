@@ -1,5 +1,13 @@
 import React from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { Colors } from '../constants/Colors'
+
+// Error boundary specific colors
+const ERROR_COLORS = {
+  background: '#FEF2F2', // Light red background
+  border: '#FECACA', // Light red border
+  darkText: '#7F1D1D', // Dark red text
+} as const
 
 interface ErrorDisplayProps {
   error: string
@@ -38,23 +46,23 @@ export const LoadingDisplay: React.FC<LoadingDisplayProps> = ({ message = 'Carga
 
 const styles = StyleSheet.create({
   errorContainer: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: ERROR_COLORS.background,
     borderRadius: 12,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: ERROR_COLORS.border,
   },
   errorTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#DC2626',
+    color: Colors.light.error,
     marginBottom: 8,
   },
   errorMessage: {
     fontSize: 14,
-    color: '#7F1D1D',
+    color: ERROR_COLORS.darkText,
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -63,13 +71,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   retryButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: Colors.light.error,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: Colors.light.onError,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -79,10 +87,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#DC2626',
+    borderColor: Colors.light.error,
   },
   dismissButtonText: {
-    color: '#DC2626',
+    color: Colors.light.error,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -92,6 +100,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
   },
 })

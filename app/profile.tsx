@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native'
 import { BottomNavigation } from '../components/BottomNavigation'
+import { Colors } from '../constants/Colors'
 
 export default function ProfileScreen() {
   return (
@@ -19,7 +20,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.light.surfaceVariant,
   },
   safeArea: {
     flex: 1,
@@ -33,12 +34,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     textAlign: 'center',
   },
 })

@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { Reminder } from '../lib/ato-api'
 import { useI18n } from './I18nProvider'
+import { Colors } from '../constants/Colors'
 
 interface CreateReminderModalProps {
   visible: boolean
@@ -122,7 +123,7 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
               value={task}
               onChangeText={setTask}
               placeholder={t('reminders.create.taskPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={Colors.light.onSurfaceLight}
               multiline
             />
           </View>
@@ -134,7 +135,7 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
               value={selectedDate}
               onChangeText={setSelectedDate}
               placeholder={getTodayDate()}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={Colors.light.onSurfaceLight}
             />
             <Text style={styles.helpText}>{t('reminders.create.dateFormat')}</Text>
           </View>
@@ -146,7 +147,7 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
               value={selectedTime}
               onChangeText={setSelectedTime}
               placeholder={getCurrentTime()}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={Colors.light.onSurfaceLight}
             />
             <Text style={styles.helpText}>{t('reminders.create.timeFormat')}</Text>
           </View>
@@ -184,7 +185,7 @@ export const CreateReminderModal: React.FC<CreateReminderModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.surface,
   },
   header: {
     flexDirection: 'row',
@@ -192,21 +193,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: Colors.light.outline,
   },
   cancelButton: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     fontWeight: '500',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
   },
   saveButton: {
     fontSize: 16,
-    color: '#3B82F6',
+    color: Colors.light.accent,
     fontWeight: '600',
   },
   content: {
@@ -219,44 +220,44 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
     marginBottom: 8,
   },
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: Colors.light.onSurfaceTertiary,
     marginBottom: 8,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: Colors.light.outline,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#1F2937',
+    color: Colors.light.onSurface,
     minHeight: 80,
     textAlignVertical: 'top',
   },
   dateInput: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: Colors.light.outline,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#1F2937',
+    color: Colors.light.onSurface,
   },
   timeInput: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: Colors.light.outline,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#1F2937',
+    color: Colors.light.onSurface,
   },
   helpText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     marginTop: 4,
   },
   frequencyContainer: {
@@ -269,19 +270,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: Colors.light.outline,
     alignItems: 'center',
   },
   frequencyOptionSelected: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+    backgroundColor: Colors.light.accent,
+    borderColor: Colors.light.accent,
   },
   frequencyText: {
     fontSize: 14,
-    color: '#374151',
+    color: Colors.light.onSurfaceTertiary,
     fontWeight: '500',
   },
   frequencyTextSelected: {
-    color: '#FFFFFF',
+    color: Colors.light.onAccent,
   },
 })

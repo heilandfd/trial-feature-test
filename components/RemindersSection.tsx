@@ -5,6 +5,13 @@ import { Reminder } from '../lib/ato-api'
 import { CreateReminderModal } from './CreateReminderModal'
 import { useI18n } from './I18nProvider'
 import { formatRelativeDate } from '../lib/i18n'
+import { Colors } from '../constants/Colors'
+
+// Reminder-specific colors for status badges
+const REMINDER_COLORS = {
+  warningBg: '#FEF3C7', // Light yellow background for pending reminders
+  warningText: '#92400E', // Dark brown text for warnings
+} as const
 
 interface ReminderItemProps {
   reminder: Reminder
@@ -17,15 +24,15 @@ const ReminderItem: React.FC<ReminderItemProps> = ({ reminder, onUpdate }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return '#F59E0B'
+        return Colors.light.warning
       case 'SENT':
-        return '#3B82F6'
+        return Colors.light.accent
       case 'COMPLETED':
-        return '#10B981'
+        return Colors.light.success
       case 'FAILED':
-        return '#EF4444'
+        return Colors.light.error
       default:
-        return '#6B7280'
+        return Colors.light.onSurfaceSecondary
     }
   }
 
@@ -206,7 +213,7 @@ export const RemindersSection: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.surface,
     borderRadius: 20,
     marginHorizontal: 20,
     marginBottom: 120,
@@ -230,30 +237,30 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
   },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1F2937',
+    backgroundColor: Colors.light.onSurface,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
   },
   createButtonIcon: {
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     fontSize: 16,
     fontWeight: '600',
     marginRight: 6,
   },
   createButtonText: {
-    color: '#FFFFFF',
+    color: Colors.light.onPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     paddingHorizontal: 20,
     marginBottom: 16,
     lineHeight: 20,
@@ -264,7 +271,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
   },
   emptyContainer: {
     padding: 20,
@@ -272,33 +279,33 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     textAlign: 'center',
   },
   remindersList: {
     paddingHorizontal: 20,
   },
   reminderItem: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: REMINDER_COLORS.warningBg,
     borderRadius: 20,
     padding: 20,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: Colors.light.warning,
   },
   reminderContent: {
     flex: 1,
   },
   reminderTime: {
     fontSize: 14,
-    color: '#92400E',
+    color: REMINDER_COLORS.warningText,
     marginBottom: 8,
     fontWeight: '500',
   },
   reminderTask: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: Colors.light.accent,
     marginBottom: 12,
   },
   statusContainer: {
@@ -314,7 +321,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F59E0B',
+    color: Colors.light.warning,
   },
   seeAllButton: {
     flexDirection: 'row',
@@ -323,17 +330,17 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: Colors.light.outline,
   },
   seeAllText: {
     fontSize: 16,
-    color: '#3B82F6',
+    color: Colors.light.accent,
     fontWeight: '600',
     marginRight: 8,
   },
   seeAllArrow: {
     fontSize: 16,
-    color: '#3B82F6',
+    color: Colors.light.accent,
     fontWeight: '600',
   },
 })

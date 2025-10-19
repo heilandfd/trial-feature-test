@@ -8,14 +8,23 @@ import { ThemedText } from '@/components/ThemedText'
 import { ThemedView } from '@/components/ThemedView'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 
+// Explore page specific colors
+const EXPLORE_COLORS = {
+  headerGradient: {
+    light: '#D0D0D0',
+    dark: '#353636',
+  },
+  icon: '#808080',
+} as const
+
 export default function TabTwoScreen() {
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+      headerBackgroundColor={EXPLORE_COLORS.headerGradient}
       headerImage={
         <IconSymbol
           size={310}
-          color="#808080"
+          color={EXPLORE_COLORS.icon}
           name="chevron.left.forwardslash.chevron.right"
           style={styles.headerImage}
         />
@@ -99,7 +108,7 @@ export default function TabTwoScreen() {
 
 const styles = StyleSheet.create({
   headerImage: {
-    color: '#808080',
+    color: EXPLORE_COLORS.icon,
     bottom: -90,
     left: -35,
     position: 'absolute',

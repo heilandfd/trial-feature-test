@@ -16,6 +16,7 @@ import { useContacts } from '../hooks/useContacts'
 import { Contact } from '../lib/ato-api'
 import { ContactDisplayInfo } from '../types/api'
 import { Ionicons } from '@expo/vector-icons'
+import { Colors } from '../constants/Colors'
 
 /**
  * ContactsScreen component displays and manages contacts for the selected ato-user
@@ -86,7 +87,7 @@ export default function ContactsScreen() {
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#60A5FA" />
+            <ActivityIndicator size="large" color={Colors.light.accent} />
             <Text style={styles.loadingText}>Cargando contactos...</Text>
           </View>
         </SafeAreaView>
@@ -141,17 +142,17 @@ export default function ContactsScreen() {
                     <Text style={styles.contactSubtitle}>{contactInfo.subtitle}</Text>
 
                     <View style={styles.contactDetail}>
-                      <Ionicons name="person" size={16} color="#6B7280" />
+                      <Ionicons name="person" size={16} color={Colors.light.onSurfaceSecondary} />
                       <Text style={styles.contactDetailText}>{contact.relationship}</Text>
                     </View>
 
                     <View style={styles.contactDetail}>
-                      <Ionicons name="location" size={16} color="#6B7280" />
+                      <Ionicons name="location" size={16} color={Colors.light.onSurfaceSecondary} />
                       <Text style={styles.contactDetailText}>{contactInfo.location}</Text>
                     </View>
 
                     <View style={styles.contactDetail}>
-                      <Ionicons name="call" size={16} color="#6B7280" />
+                      <Ionicons name="call" size={16} color={Colors.light.onSurfaceSecondary} />
                       <Text style={styles.contactDetailText}>{contactInfo.phone}</Text>
                     </View>
                   </View>
@@ -160,7 +161,7 @@ export default function ContactsScreen() {
                     style={styles.editButton}
                     onPress={() => handleEditContact(contact)}
                   >
-                    <Ionicons name="pencil" size={20} color="#60A5FA" />
+                    <Ionicons name="pencil" size={20} color={Colors.light.accent} />
                   </TouchableOpacity>
                 </View>
               )
@@ -185,7 +186,7 @@ export default function ContactsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.light.surfaceVariant,
   },
   safeArea: {
     flex: 1,
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     marginTop: 12,
   },
   header: {
@@ -213,13 +214,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#60A5FA',
+    backgroundColor: Colors.light.accent,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -267,12 +268,12 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: Colors.light.onSurface,
     marginBottom: 4,
   },
   contactSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     marginBottom: 12,
   },
   contactDetail: {
@@ -282,14 +283,14 @@ const styles = StyleSheet.create({
   },
   contactDetailText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     marginLeft: 8,
     flex: 1,
   },
   editButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: Colors.light.surfaceSecondary,
     marginLeft: 12,
   },
   emptyState: {
@@ -300,23 +301,23 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: Colors.light.onSurfaceLight,
     textAlign: 'center',
     lineHeight: 20,
   },
   errorText: {
     fontSize: 16,
-    color: '#EF4444',
+    color: Colors.light.error,
     textAlign: 'center',
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#60A5FA',
+    backgroundColor: Colors.light.accent,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,

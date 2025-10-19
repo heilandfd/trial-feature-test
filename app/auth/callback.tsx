@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import ErrorModal from '../../components/ErrorModal'
+import { Colors } from '../../constants/Colors'
 
 export default function AuthCallbackScreen() {
   const router = useRouter()
@@ -54,7 +55,7 @@ export default function AuthCallbackScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
-          <ActivityIndicator size="large" color="#00D4FF" />
+          <ActivityIndicator size="large" color={Colors.light.primaryDark} />
           <Text style={styles.loadingText}>Validando sesión...</Text>
         </View>
       </SafeAreaView>
@@ -80,7 +81,7 @@ export default function AuthCallbackScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.surface,
   },
   content: {
     flex: 1,
@@ -90,26 +91,26 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     marginTop: 16,
     textAlign: 'center',
   },
   errorTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#DC2626',
+    color: Colors.light.error,
     marginBottom: 16,
     textAlign: 'center',
   },
   errorMessage: {
     fontSize: 16,
-    color: '#374151',
+    color: Colors.light.onSurfaceTertiary,
     marginBottom: 8,
     textAlign: 'center',
   },
   errorSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.light.onSurfaceSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -10,6 +10,7 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated'
+import { Colors } from '../../constants/Colors'
 
 interface AssistantTriggerProps {
   onPress: () => void
@@ -88,7 +89,7 @@ export const AssistantTrigger: React.FC<AssistantTriggerProps> = ({
 }) => {
   const SIZE = size
   const innerSize = Math.round(SIZE * INNER_RATIO)
-  const outerColor = isActive ? '#00D4FF' : '#3CCEF5'
+  const outerColor = isActive ? Colors.light.primaryDark : Colors.light.primary
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
@@ -102,9 +103,9 @@ export const AssistantTrigger: React.FC<AssistantTriggerProps> = ({
         <Svg width={HALO_WIDTH} height={HALO_HEIGHT} style={styles.haloSvg}>
           <Defs>
             <RadialGradient id="halo" cx="50%" cy="100%">
-              <Stop offset="20%" stopColor="#3CCEF5" stopOpacity="0.40" />
-              <Stop offset="55%" stopColor="#3CCEF5" stopOpacity="0.18" />
-              <Stop offset="100%" stopColor="#3CCEF5" stopOpacity="0" />
+              <Stop offset="20%" stopColor={Colors.light.primary} stopOpacity="0.40" />
+              <Stop offset="55%" stopColor={Colors.light.primary} stopOpacity="0.18" />
+              <Stop offset="100%" stopColor={Colors.light.primary} stopOpacity="0" />
             </RadialGradient>
           </Defs>
           <Circle cx={HALO_WIDTH / 2} cy={HALO_WIDTH / 2} r={HALO_WIDTH / 2} fill="url(#halo)" />
@@ -164,7 +165,7 @@ export const AssistantTrigger: React.FC<AssistantTriggerProps> = ({
 
 const SHADOW_STYLES = Platform.select({
   ios: {
-    shadowColor: '#3CCEF5',
+    shadowColor: Colors.light.primary,
     shadowOpacity: 0.9,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
   waveRing: {
     position: 'absolute',
     borderWidth: 2,
-    borderColor: '#3CCEF5',
+    borderColor: Colors.light.primary,
     backgroundColor: 'transparent',
     zIndex: 1,
   },

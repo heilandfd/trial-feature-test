@@ -7,13 +7,22 @@ import ParallaxScrollView from '@/components/ParallaxScrollView'
 import { ThemedText } from '@/components/ThemedText'
 import { ThemedView } from '@/components/ThemedView'
 import { useAuth } from '@/components/AuthProvider'
+import { Colors } from '@/constants/Colors'
+
+// Home screen specific colors
+const HOME_COLORS = {
+  headerGradient: {
+    light: '#A1CEDC',
+    dark: '#1D3D47',
+  },
+} as const
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth()
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      headerBackgroundColor={HOME_COLORS.headerGradient}
       headerImage={
         <Image
           source={require('@/assets/images/partial-react-logo.png')}
@@ -56,14 +65,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   signOutButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: Colors.light.error,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
   },
   signOutText: {
-    color: '#FFFFFF',
+    color: Colors.light.onError,
     fontWeight: 'bold',
   },
 })

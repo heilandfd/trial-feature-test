@@ -9,6 +9,7 @@ import { RemindersSection } from '../components/RemindersSection'
 import { BottomNavigation } from '../components/BottomNavigation'
 import { ErrorDisplay, LoadingDisplay } from '../components/ErrorBoundary'
 import { useI18n } from '../components/I18nProvider'
+import { Colors } from '../constants/Colors'
 
 export default function DashboardScreen() {
   const router = useRouter()
@@ -90,7 +91,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.light.surfaceVariant,
   },
   safeArea: {
     flex: 1,
